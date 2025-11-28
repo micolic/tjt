@@ -74,7 +74,6 @@ script = ExtResource("4_jx0ua")
 unit_grid = NodePath("ArenaUnitGrid")
 tile_highlighter = NodePath("TileHighlighter")
 metadata/_edit_group_ = true
-metadata/_edit_lock_ = true
 
 [node name="Decor" type="TileMapLayer" parent="GameArea"]
 modulate = Color(1, 1, 1, 0.43137255)
@@ -97,9 +96,12 @@ play_area = NodePath("..")
 highlight_layer = NodePath("../Highlight")
 tile = Vector2i(3, 0)
 
-[node name="EnemyArea" type="TileMapLayer" parent="."]
+[node name="EnemyArea" type="TileMapLayer" parent="." node_paths=PackedStringArray("unit_grid", "tile_highlighter")]
 position = Vector2(160, 0)
 tile_set = ExtResource("1_1qjuf")
+script = ExtResource("4_jx0ua")
+unit_grid = NodePath("ArenaUnitGrid")
+tile_highlighter = NodePath("TileHighlighter")
 metadata/_edit_group_ = true
 
 [node name="Decor" type="TileMapLayer" parent="EnemyArea"]
@@ -115,6 +117,13 @@ tile_set = ExtResource("1_1qjuf")
 position = Vector2(0, -32)
 script = ExtResource("4_asdgj")
 size = Vector2i(10, 3)
+
+[node name="TileHighlighter" type="Node" parent="EnemyArea" node_paths=PackedStringArray("play_area", "highlight_layer")]
+script = ExtResource("6_u52cf")
+enabled = false
+play_area = NodePath("..")
+highlight_layer = NodePath("../Highlight")
+tile = Vector2i(3, 0)
 
 [node name="Bench" type="TileMapLayer" parent="."]
 visible = false
@@ -135,11 +144,14 @@ position = Vector2(352, 288)
 position = Vector2(256, 288)
 stats = ExtResource("8_6w4xk")
 
-[node name="UnitMover" type="Node" parent="."]
+[node name="UnitMover" type="Node" parent="." node_paths=PackedStringArray("play_areas")]
 script = ExtResource("8_ii07k")
+play_areas = [NodePath("../EnemyArea"), NodePath("../GameArea")]
 
-[node name="UnitSpawner" type="Node" parent="."]
+[node name="UnitSpawner" type="Node" parent="." node_paths=PackedStringArray("enemy_area", "game_area")]
 script = ExtResource("10_2ml6w")
+enemy_area = NodePath("../EnemyArea")
+game_area = NodePath("../GameArea")
 
 [node name="SellPortal" parent="." instance=ExtResource("11_xgbxb")]
 position = Vector2(64, 288)

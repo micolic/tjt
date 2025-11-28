@@ -18,8 +18,11 @@ func setup_unit(unit: Unit) -> void:
 
 ## Enables or disables tile highlighters for all play areas.
 func _set_highlighters(enabled: bool) -> void:
-	for play_area: PlayArea in play_areas:
-		play_area.tile_highlighter.enabled = enabled
+	# Only enable highlighter for GameArea (index 1), not EnemyArea (index 0)
+	for i in play_areas.size():
+		if i == 0:  # Skip EnemyArea
+			continue
+		play_areas[i].tile_highlighter.enabled = enabled
 
 ## Returns the index of the play area containing the given global position.
 func _get_play_area_for_position(global: Vector2) -> int:
@@ -71,18 +74,37 @@ func _on_unit_dropped(starting_position: Vector2, unit: Unit) -> void:
 	var old_area_index := _get_play_area_for_position(starting_position)
 	var drop_area_index := _get_play_area_for_position(unit.get_global_mouse_position())
 
-	if drop_area_index == -1:
+	# Prevent dropping on EnemyArea (index 0)
+	if drop_area_index == -1 or drop_area_index == 0:
 		_reset_unit_to_starting_position(starting_position, unit)
+		return
+	
+	var new_area := play_areas[drop_area_index]
+	var new_tile := new_area.get_hovered_tile()
+	
+	# If old_area_index is -1, unit was not in any play area (shouldn't happen, but safety check)
+	if old_area_index == -1:
+		# Only place if tile is not occupied
+		if not new_area.unit_grid.is_tile_occupied(new_tile):
+			_move_unit(unit, new_area, new_tile)
+		else:
+			unit.reset_after_dragging(starting_position)
 		return
 
 	var old_area := play_areas[old_area_index]
 	var old_tile := old_area.get_tile_from_global(starting_position)
-	var new_area := play_areas[drop_area_index]
-	var new_tile := new_area.get_hovered_tile()
 
+	# Check if the destination tile is occupied
 	if new_area.unit_grid.is_tile_occupied(new_tile):
-		var old_unit: Unit = new_area.unit_grid.units[new_tile]
+		var target_unit: Unit = new_area.unit_grid.units[new_tile]
+		
+		# Remove both units from their current positions
 		new_area.unit_grid.remove_unit(new_tile)
-		_move_unit(old_unit, old_area, old_tile)
-
-	_move_unit(unit, new_area, new_tile)
+		old_area.unit_grid.remove_unit(old_tile)
+		
+		# Swap: move dragged unit to destination, and target unit to origin
+		_move_unit(unit, new_area, new_tile)
+		_move_unit(target_unit, old_area, old_tile)
+	else:
+		# No swap needed, just move the unit
+		_move_unit(unit, new_area, new_tile)

@@ -77,9 +77,10 @@ show_percentage = false
 script = ExtResource("4_bhlit")
 target = NodePath("..")
 
-[node name="VelocityBasedRotation" type="Node" parent="." node_paths=PackedStringArray("target")]
+[node name="VelocityBasedRotation" type="Node" parent="." node_paths=PackedStringArray("target", "drag_and_drop")]
 script = ExtResource("5_vgvef")
 target = NodePath("../Visuals/Skin")
+drag_and_drop = NodePath("../DragAndDrop")
 lerp_seconds = 0.25
 rotation_multiplier = 80
 x_velocity_threshold = 10.0

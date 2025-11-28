@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://dtc5srdp3gvgb"]
+
+[node name="VBoxContainer" type="VBoxContainer"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_bottom = 40.0
+grow_horizontal = 0
+
+[node name="Top" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Bottom" type="HBoxContainer" parent="."]
+layout_mode = 2

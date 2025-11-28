@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://cg737ag1ouagj"]
+[gd_scene load_steps=14 format=3 uid="uid://cg737ag1ouagj"]
 
 [ext_resource type="Texture2D" uid="uid://cx1ivjobggp8n" path="res://asset/sprites/rogues.png" id="1_fmv3f"]
 [ext_resource type="Script" uid="uid://ccymptbm5oi5m" path="res://scenes/unit/unit.gd" id="1_fvc8g"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://c7nupwce5jh1q" path="res://components/outline_highlighter.gd" id="4_0wuuu"]
 [ext_resource type="Script" uid="uid://b73kso3vipjjx" path="res://components/drag_and_drop.gd" id="4_bhlit"]
 [ext_resource type="Script" uid="uid://brk3dd83fa5el" path="res://components/velocity_based_rotation.gd" id="5_vgvef"]
+[ext_resource type="Script" uid="uid://djfhyq8ravn6l" path="res://components/unit_ai.gd" id="8_ai"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_fmv3f"]
 size = Vector2(36, 36)
@@ -90,6 +91,10 @@ script = ExtResource("4_0wuuu")
 visuals = NodePath("../Visuals")
 outline_color = Color(1, 1, 1, 1)
 outline_thickness = 1
+
+[node name="UnitAI" type="Node" parent="."]
+script = ExtResource("8_ai")
+enabled = false
 
 [connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
 [connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]

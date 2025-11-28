@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=4 uid="uid://v8oorrm8p1jc"]
+[gd_scene load_steps=19 format=4 uid="uid://v8oorrm8p1jc"]
 
 [ext_resource type="TileSet" uid="uid://djkgdgbx8umwd" path="res://scenes/arena/tileset.tres" id="1_1qjuf"]
 [ext_resource type="Script" uid="uid://c10hgjyup6hw" path="res://scenes/arena/arena.gd" id="1_5tue2"]
@@ -12,6 +12,9 @@
 [ext_resource type="Script" uid="uid://b6rjlsb7nqmne" path="res://components/unit_spawner.gd" id="10_2ml6w"]
 [ext_resource type="PackedScene" uid="uid://io08qsmxjk6t" path="res://scenes/sell_portal/sell_portal.tscn" id="11_xgbxb"]
 [ext_resource type="Resource" uid="uid://dfl6uw6hkhahh" path="res://data/player/player_stats.tres" id="12_vmsrg"]
+[ext_resource type="Script" uid="uid://lcff67541wbq" path="res://components/battle_manager.gd" id="13_battle"]
+[ext_resource type="Resource" uid="uid://c8g5xn6wnajf" path="res://data/units/bjorn_enemy.tres" id="14_bjorn_enemy"]
+[ext_resource type="Resource" uid="uid://cvcydg1w6jk2" path="res://data/units/mage_enemy.tres" id="15_mage_enemy"]
 
 [sub_resource type="Curve" id="Curve_8trdl"]
 _data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.19266054, 1), 0.0, 0.0, 0, 0, Vector2(0.77675843, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
@@ -35,7 +38,7 @@ scale_max = 0.19999999
 scale_curve = SubResource("CurveTexture_5tue2")
 color = Color(1, 1, 1, 0.49411765)
 
-[node name="Arena" type="Node2D"]
+[node name="Arena" type="Node2D" groups=["arena"]]
 script = ExtResource("1_5tue2")
 metadata/_edit_lock_ = true
 
@@ -96,6 +99,13 @@ play_area = NodePath("..")
 highlight_layer = NodePath("../Highlight")
 tile = Vector2i(3, 0)
 
+[node name="UnitPlayer1" parent="GameArea" instance=ExtResource("4_aj7ud")]
+position = Vector2(64, 64)
+
+[node name="UnitPlayer2" parent="GameArea" instance=ExtResource("4_aj7ud")]
+position = Vector2(224, 64)
+stats = ExtResource("8_6w4xk")
+
 [node name="EnemyArea" type="TileMapLayer" parent="." node_paths=PackedStringArray("unit_grid", "tile_highlighter")]
 position = Vector2(160, 0)
 tile_set = ExtResource("1_1qjuf")
@@ -125,6 +135,14 @@ play_area = NodePath("..")
 highlight_layer = NodePath("../Highlight")
 tile = Vector2i(3, 0)
 
+[node name="Unit" parent="EnemyArea" instance=ExtResource("4_aj7ud")]
+position = Vector2(64, 32)
+stats = ExtResource("14_bjorn_enemy")
+
+[node name="Unit2" parent="EnemyArea" instance=ExtResource("4_aj7ud")]
+position = Vector2(224, 32)
+stats = ExtResource("15_mage_enemy")
+
 [node name="Bench" type="TileMapLayer" parent="."]
 visible = false
 position = Vector2(160, 320)
@@ -136,13 +154,6 @@ metadata/_edit_lock_ = true
 position = Vector2(0, -288)
 tile_map_data = PackedByteArray("AAAHAAcAAQAJAAwAAAAIAAcAAQAJAAwAAAAIAAgAAQAJAAwAAAAIAAkAAQAJAAwAAAAJAAkAAQAJAAwAAAA=")
 tile_set = ExtResource("1_1qjuf")
-
-[node name="Unit" parent="." instance=ExtResource("4_aj7ud")]
-position = Vector2(352, 288)
-
-[node name="Unit2" parent="." instance=ExtResource("4_aj7ud")]
-position = Vector2(256, 288)
-stats = ExtResource("8_6w4xk")
 
 [node name="UnitMover" type="Node" parent="." node_paths=PackedStringArray("play_areas")]
 script = ExtResource("8_ii07k")
@@ -156,3 +167,9 @@ game_area = NodePath("../GameArea")
 [node name="SellPortal" parent="." instance=ExtResource("11_xgbxb")]
 position = Vector2(64, 288)
 player_stats = ExtResource("12_vmsrg")
+
+[node name="BattleManager" type="Node" parent="." node_paths=PackedStringArray("enemy_area", "game_area") groups=["battle_manager"]]
+script = ExtResource("13_battle")
+preparation_time = 10.0
+enemy_area = NodePath("../EnemyArea")
+game_area = NodePath("../GameArea")

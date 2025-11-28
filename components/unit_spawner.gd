@@ -8,33 +8,28 @@ extends Node
 signal unit_spawned(unit: Unit)
 
 
-# Preloads the unit scene for instancing new units.
-const UNIT = preload("res://scenes/unit/unit.tscn")
-
-
 # References to the enemy and game play areas where units can be spawned.
 @export var enemy_area: PlayArea
 @export var game_area: PlayArea
 
 
-# Returns the first play area (enemy or game) that has available space for a unit.
-func _get_first_available_area() -> PlayArea:
-	if not enemy_area.unit_grid.is_grid_full():
-		return enemy_area
-	elif not game_area.unit_grid.is_grid_full():
-		return game_area
-	
-	return null
-
-
-
-# Spawns a new unit with the given stats in the first available play area.
+# Spawns a new unit with the given stats in the appropriate play area based on team.
 # Emits the unit_spawned signal after adding the unit.
 func spawn_unit(unit: UnitStats) -> void:
-	var area := _get_first_available_area()
-	assert(area, "No available space to add unit to!")
+	# Load unit scene dynamically
+	var unit_scene = load("res://scenes/unit/unit.tscn")
+	assert(unit_scene, "Could not load unit scene!")
 	
-	var new_unit := UNIT.instantiate()
+	# Determine which area to spawn in based on team
+	var area: PlayArea
+	if unit.team == UnitStats.Team.PLAYER:
+		area = game_area
+		assert(not game_area.unit_grid.is_grid_full(), "Game area is full!")
+	else:
+		area = enemy_area
+		assert(not enemy_area.unit_grid.is_grid_full(), "Enemy area is full!")
+	
+	var new_unit: Node = unit_scene.instantiate()
 	var tile := area.unit_grid.get_first_available_tile()
 	area.unit_grid.add_child(new_unit)
 	area.unit_grid.add_unit(tile, new_unit)

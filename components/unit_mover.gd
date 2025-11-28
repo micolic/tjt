@@ -98,9 +98,8 @@ func _on_unit_dropped(starting_position: Vector2, unit: Unit) -> void:
 	if new_area.unit_grid.is_tile_occupied(new_tile):
 		var target_unit: Unit = new_area.unit_grid.units[new_tile]
 		
-		# Remove both units from their current positions
+		# Remove target unit from destination (dragged unit already removed in _on_unit_drag_started)
 		new_area.unit_grid.remove_unit(new_tile)
-		old_area.unit_grid.remove_unit(old_tile)
 		
 		# Swap: move dragged unit to destination, and target unit to origin
 		_move_unit(unit, new_area, new_tile)

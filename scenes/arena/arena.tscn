@@ -135,11 +135,11 @@ highlight_layer = NodePath("../Highlight")
 tile = Vector2i(3, 0)
 
 [node name="Unit" parent="EnemyArea" instance=ExtResource("4_aj7ud")]
-position = Vector2(64, 32)
+position = Vector2(136, 48)
 stats = ExtResource("14_bjorn_enemy")
 
 [node name="Unit2" parent="EnemyArea" instance=ExtResource("4_aj7ud")]
-position = Vector2(224, 32)
+position = Vector2(137, 12)
 stats = ExtResource("15_mage_enemy")
 
 [node name="Bench" type="TileMapLayer" parent="."]

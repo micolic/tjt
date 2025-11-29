@@ -64,8 +64,8 @@ func _process(delta: float) -> void:
 		if distance_to_target <= attack_range_pixels and attack_timer <= 0:
 			# In range and ready to attack
 			_try_attack()
-		elif distance_to_target > attack_range_pixels:
-			# Out of range - move closer continuously each frame
+		elif distance_to_target > attack_range_pixels and (not current_target.has_meta("is_dummy_target") or unit.stats.team == UnitStats.Team.ENEMY):
+			# Out of range - move closer continuously each frame (only if not dummy target for allies)
 			var direction: Vector2 = (current_target.global_position - unit.global_position).normalized()
 			var distance_to_move: float = movement_speed * delta
 			unit.global_position += direction * distance_to_move
@@ -75,11 +75,20 @@ func _process(delta: float) -> void:
 ## Main AI update logic.
 func _update_ai() -> void:
 	# Find or update target
-	if not current_target or not is_instance_valid(current_target):
-		current_target = _find_nearest_enemy()
+	var new_target = _find_nearest_enemy()
+	
+	# For enemy units, if no target, they should move towards player base
+	if not new_target and unit.stats.team == UnitStats.Team.ENEMY:
+		new_target = _get_player_base_target()
+	
+	# If target changed, clean up old dummy target
+	if current_target != new_target:
+		if current_target and current_target.has_meta("is_dummy_target"):
+			current_target.queue_free()
+		current_target = new_target
 
 
-## Finds the nearest enemy unit.
+## Finds the nearest enemy unit within aggro range.
 func _find_nearest_enemy():
 	if not unit.stats:
 		return null
@@ -99,15 +108,27 @@ func _find_nearest_enemy():
 		
 		# Skip self
 		if enemy == unit:
-			print("  - Skipping self: %s" % enemy.stats.name)
 			continue
 		
 		var distance: float = unit.global_position.distance_to(enemy.global_position)
-		if distance < nearest_distance:
-			nearest_distance = distance
-			nearest = enemy
+		
+		# Check if within aggro range
+		var aggro_range_pixels: float = unit.stats.aggro_range * CELL_SIZE.x
+		if distance <= aggro_range_pixels:
+			if distance < nearest_distance:
+				nearest_distance = distance
+				nearest = enemy
 	
 	return nearest
+
+
+## Returns a dummy target representing the player base for enemy units.
+func _get_player_base_target():
+	# Create a dummy node at the bottom of the screen
+	var dummy = Node2D.new()
+	dummy.global_position = Vector2(unit.global_position.x, 1000)  # Far below
+	dummy.set_meta("is_dummy_target", true)
+	return dummy
 
 
 ## Moves towards the current target.
@@ -146,12 +167,12 @@ func _try_attack() -> void:
 	if attack_timer > 0:
 		return  # Still on cooldown
 	
-	# Perform attack
-	_perform_attack(current_target)
-	
-	# Set cooldown
-	if unit.stats:
-		attack_timer = unit.stats.get_time_between_attacks()
+	# Don't attack dummy targets (like player base)
+	if not current_target.has_meta("is_dummy_target"):
+		_perform_attack(current_target)
+		# Set cooldown
+		if unit.stats:
+			attack_timer = unit.stats.get_time_between_attacks()
 
 
 ## Performs an attack on the target.

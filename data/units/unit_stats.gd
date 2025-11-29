@@ -42,10 +42,10 @@ const MOVE_ONE_TILE_SPEED := 1.0
 
 @export_category("Battle")
 @export var team: Team
-@export var max_health: Array[int]
+@export var max_health: int
 @export var max_mana: int
 @export var starting_mana: int
-@export var attack_damage: Array[int]
+@export var attack_damage: int
 @export var ability_power: int
 @export var attack_speed: float
 @export var armor: int
@@ -78,11 +78,11 @@ func get_gold_value() -> int:
 
 
 func get_max_health() -> int:
-	return max_health[tier - 1]
+	return max_health
 
 
 func get_attack_damage() -> int:
-	return attack_damage[tier - 1]
+	return attack_damage
 
 
 func get_time_between_attacks() -> float:

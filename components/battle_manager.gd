@@ -16,7 +16,7 @@ enum State {
 	ENDED         ## Battle is over
 }
 
-@export var preparation_time: float = 30.0
+@export var preparation_time: float = 10.0
 @export var enemy_area: PlayArea
 @export var game_area: PlayArea
 

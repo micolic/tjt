@@ -137,14 +137,8 @@ func _flash_health_bar() -> void:
 	if not health_bar:
 		return
 	
-	# Store original color
-	var original_color = health_bar.modulate
-	health_bar.modulate = Color.WHITE  # Brief white flash
-	
-	# Reset color after short delay
-	await get_tree().create_timer(0.1).timeout
-	if is_instance_valid(health_bar):
-		health_bar.modulate = original_color
+	# Just a visual feedback - no actual effect needed
+	pass
 
 
 ## Updates mana bar display.
@@ -188,6 +182,8 @@ func set_stats(value: UnitStats) -> void:
 	if not is_node_ready():
 		await ready
 	
+	# Set the correct spritesheet based on team
+	skin.texture = value.TEAM_SPRITESHEET[value.team]
 	skin.region_rect.position = Vector2(stats.skin_coordinates) * CELL_SIZE
 	
 	# Connect stats signals if not in editor

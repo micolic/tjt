@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://cx1ivjobggp8n" path="res://asset/sprites/rogues.png" id="1_fmv3f"]
 [ext_resource type="Script" uid="uid://ccymptbm5oi5m" path="res://scenes/unit/unit.gd" id="1_fvc8g"]
-[ext_resource type="Resource" uid="uid://dk4rxstn86o22" path="res://data/units/bjorn.tres" id="2_vh40f"]
+[ext_resource type="Resource" uid="uid://dk4rxstn86o22" path="res://data/units/bjorn_ally.tres" id="2_vh40f"]
 [ext_resource type="Material" uid="uid://bb8m5fhpi4wqn" path="res://asset/shaders/2d_outline_shader.tres" id="3_3po7s"]
 [ext_resource type="Script" uid="uid://c7nupwce5jh1q" path="res://components/outline_highlighter.gd" id="4_0wuuu"]
 [ext_resource type="Script" uid="uid://b73kso3vipjjx" path="res://components/drag_and_drop.gd" id="4_bhlit"]

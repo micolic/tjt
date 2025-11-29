@@ -1,21 +1,14 @@
-[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3 uid="uid://c8g5xn6wnajf"]
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3 uid="uid://dk4rxstn86o22"]
 
 [ext_resource type="Script" uid="uid://xf3ubegfusxx" path="res://data/units/unit_stats.gd" id="1_d6p4t"]
 
 [resource]
 script = ExtResource("1_d6p4t")
 name = "Bjorn"
-rarity = 0
-gold_cost = 1
-tier = 1
-pool_count = 5
 skin_coordinates = Vector2i(1, 3)
-team = 1
-max_health = [500, 900, 1620]
+max_health = 500
 max_mana = 100
-starting_mana = 0
-attack_damage = [50, 90, 162]
-ability_power = 0
+attack_damage = 50
 attack_speed = 0.7
 armor = 5
 magic_resist = 20

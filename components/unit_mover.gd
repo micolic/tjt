@@ -12,9 +12,11 @@ func _ready() -> void:
 
 ## Connects drag-and-drop signals for a given unit to the mover's handlers.
 func setup_unit(unit: Unit) -> void:
-	unit.drag_and_drop.drag_started.connect(_on_unit_drag_started.bind(unit))
-	unit.drag_and_drop.drag_canceled.connect(_on_unit_drag_canceled.bind(unit))
-	unit.drag_and_drop.dropped.connect(_on_unit_dropped.bind(unit))
+	# Only setup drag-and-drop for units that have it (player units)
+	if unit.has_node("DragAndDrop"):
+		unit.drag_and_drop.drag_started.connect(_on_unit_drag_started.bind(unit))
+		unit.drag_and_drop.drag_canceled.connect(_on_unit_drag_canceled.bind(unit))
+		unit.drag_and_drop.dropped.connect(_on_unit_dropped.bind(unit))
 
 ## Enables or disables tile highlighters for all play areas.
 func _set_highlighters(enabled: bool) -> void:

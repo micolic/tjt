@@ -13,12 +13,18 @@ signal unit_spawned(unit: Unit)
 @export var game_area: PlayArea
 
 
-# Spawns a new unit with the given stats in the appropriate play area based on team.
+# Spawns units into the first available play area (enemy or game area).
 # Emits the unit_spawned signal after adding the unit.
 func spawn_unit(unit: UnitStats) -> void:
-	# Load unit scene dynamically
-	var unit_scene = load("res://scenes/unit/unit.tscn")
-	assert(unit_scene, "Could not load unit scene!")
+	# Load unit scene dynamically based on team
+	var unit_scene_path: String
+	if unit.team == UnitStats.Team.PLAYER:
+		unit_scene_path = "res://scenes/unit/unit.tscn"
+	else:
+		unit_scene_path = "res://scenes/unit/enemy_unit.tscn"
+	
+	var unit_scene = load(unit_scene_path)
+	assert(unit_scene, "Could not load unit scene: " + unit_scene_path)
 	
 	# Determine which area to spawn in based on team
 	var area: PlayArea
@@ -31,8 +37,8 @@ func spawn_unit(unit: UnitStats) -> void:
 	
 	var new_unit: Node = unit_scene.instantiate()
 	var tile := area.unit_grid.get_first_available_tile()
-	area.unit_grid.add_child(new_unit)
 	area.unit_grid.add_unit(tile, new_unit)
+	area.unit_grid.add_child(new_unit)
 	new_unit.global_position = area.get_global_from_tile(tile) - Arena.HALF_CELL_SIZE
 	new_unit.stats = unit
 	unit_spawned.emit(new_unit)

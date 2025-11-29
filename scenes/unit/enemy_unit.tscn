@@ -1,0 +1,84 @@
+[gd_scene load_steps=12 format=3 uid="uid://enemy_unit_scene"]
+
+[ext_resource type="Texture2D" uid="uid://cx1ivjobggp8n" path="res://asset/sprites/monsters.png" id="1_fmv3f"]
+[ext_resource type="Script" uid="uid://enemy_unit_script" path="res://scenes/unit/enemy_unit.gd" id="1_fvc8g"]
+[ext_resource type="Resource" uid="uid://c8g5xn6wnajf" path="res://data/units/orc_enemy.tres" id="2_vh40f"]
+[ext_resource type="Material" uid="uid://bb8m5fhpi4wqn" path="res://asset/shaders/2d_outline_shader.tres" id="3_3po7s"]
+[ext_resource type="Script" uid="uid://brk3dd83fa5el" path="res://components/velocity_based_rotation.gd" id="5_vgvef"]
+[ext_resource type="Script" uid="uid://djfhyq8ravn6l" path="res://components/unit_ai.gd" id="8_ai"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_fmv3f"]
+size = Vector2(36, 36)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fmv3f"]
+bg_color = Color(0.13319641, 0.13319641, 0.13319635, 1)
+border_color = Color(0.13319641, 0.13319641, 0.13319635, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fvc8g"]
+bg_color = Color(0, 0.50980395, 0.09019608, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.13319641, 0.13319641, 0.13319635, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vh40f"]
+bg_color = Color(0.13319641, 0.13319641, 0.13319635, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bhlit"]
+bg_color = Color(0, 0.12941177, 0.827451, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.13319641, 0.13319641, 0.13319635, 1)
+
+[node name="EnemyUnit" type="Area2D" groups=["units"]]
+script = ExtResource("1_fvc8g")
+stats = ExtResource("2_vh40f")
+metadata/_edit_group_ = true
+
+[node name="Visuals" type="CanvasGroup" parent="."]
+material = ExtResource("3_3po7s")
+
+[node name="Skin" type="Sprite2D" parent="Visuals"]
+texture = ExtResource("1_fmv3f")
+offset = Vector2(16, 8)
+region_enabled = true
+region_rect = Rect2(0, 0, 32, 32)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+visible = false
+position = Vector2(16, 8)
+shape = SubResource("RectangleShape2D_fmv3f")
+
+[node name="HealthBar" type="ProgressBar" parent="."]
+offset_left = 1.0
+offset_top = -20.0
+offset_right = 31.0
+offset_bottom = -14.0
+theme_override_styles/background = SubResource("StyleBoxFlat_fmv3f")
+theme_override_styles/fill = SubResource("StyleBoxFlat_fvc8g")
+value = 42.0
+show_percentage = false
+
+[node name="ManaBar" type="ProgressBar" parent="."]
+offset_left = 1.0
+offset_top = -15.0
+offset_right = 31.0
+offset_bottom = -11.0
+theme_override_styles/background = SubResource("StyleBoxFlat_vh40f")
+theme_override_styles/fill = SubResource("StyleBoxFlat_bhlit")
+value = 13.0
+show_percentage = false
+
+[node name="VelocityBasedRotation" type="Node" parent="." node_paths=PackedStringArray("target")]
+script = ExtResource("5_vgvef")
+target = NodePath("../Visuals/Skin")
+lerp_seconds = 0.25
+rotation_multiplier = 80
+x_velocity_threshold = 10.0
+
+[node name="UnitAI" type="Node" parent="."]
+script = ExtResource("8_ai")
+enabled = false

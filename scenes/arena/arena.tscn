@@ -41,6 +41,18 @@ outlines = Array[PackedVector2Array]([PackedVector2Array(0, 0, 640, 0, 640, 360,
 script = ExtResource("1_5tue2")
 metadata/_edit_lock_ = true
 
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="UnitStatsContainer" type="VBoxContainer" parent="UI"]
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 10.0
+offset_top = -150.0
+offset_right = 130.0
+offset_bottom = 150.0
+grow_vertical = 2
+
 [node name="Visuals" type="Node2D" parent="."]
 metadata/_edit_lock_ = true
 metadata/_edit_group_ = true

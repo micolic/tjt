@@ -6,6 +6,7 @@ signal quick_sell_pressed
 signal health_reached_zero
 signal health_changed(new_health: int)
 signal mana_bar_filled
+signal mana_changed(new_mana: int)
 
 const CELL_SIZE := Vector2(32, 32)
 
@@ -213,6 +214,7 @@ func _set_current_health(value: int) -> void:
 ## Sets current mana and emits signal if full.
 func _set_current_mana(value: int) -> void:
 	current_mana = value
+	mana_changed.emit(current_mana)
 	if current_mana >= stats.max_mana:
 		mana_bar_filled.emit()
 

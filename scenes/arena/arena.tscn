@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=4 uid="uid://v8oorrm8p1jc"]
+[gd_scene load_steps=18 format=4 uid="uid://v8oorrm8p1jc"]
 
 [ext_resource type="TileSet" uid="uid://djkgdgbx8umwd" path="res://scenes/arena/tileset.tres" id="1_1qjuf"]
 [ext_resource type="Script" uid="uid://c10hgjyup6hw" path="res://scenes/arena/arena.gd" id="1_5tue2"]
@@ -16,27 +16,26 @@
 [ext_resource type="Resource" uid="uid://c8g5xn6wnajf" path="res://data/units/orc_enemy.tres" id="14_bjorn_enemy"]
 [ext_resource type="Resource" uid="uid://cvcydg1w6jk2" path="res://data/units/necro_enemy.tres" id="15_mage_enemy"]
 
-[sub_resource type="Curve" id="Curve_8trdl"]
-_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.19266054, 1), 0.0, 0.0, 0, 0, Vector2(0.77675843, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
-point_count = 4
-
-[sub_resource type="CurveTexture" id="CurveTexture_5tue2"]
-curve = SubResource("Curve_8trdl")
-
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_aj7ud"]
 particle_flag_disable_z = true
 emission_shape = 3
 emission_box_extents = Vector3(320, 1, 1)
 spread = 180.0
-initial_velocity_min = 20.0
-initial_velocity_max = 30.0
-angular_velocity_min = 19.999983
-angular_velocity_max = 39.999985
+initial_velocity_min = 10.0
+initial_velocity_max = 50.0
+angular_velocity_min = -10.0
+angular_velocity_max = 10.0
 gravity = Vector3(0, 0, 0)
-scale_min = 0.099999994
-scale_max = 0.19999999
-scale_curve = SubResource("CurveTexture_5tue2")
-color = Color(1, 1, 1, 0.49411765)
+scale_min = 0.049999997
+scale_max = 0.29999998
+color = Color(1, 1, 1, 0.5)
+hue_variation_min = -0.1
+hue_variation_max = 0.1
+
+[sub_resource type="NavigationPolygon" id="NavigationPolygon_enemy_path"]
+vertices = PackedVector2Array(0, 0, 640, 0, 640, 360, 0, 360)
+polygons = Array[PackedInt32Array]([PackedInt32Array(0, 1, 2, 3)])
+outlines = Array[PackedVector2Array]([PackedVector2Array(0, 0, 640, 0, 640, 360, 0, 360)])
 
 [node name="Arena" type="Node2D" groups=["arena"]]
 script = ExtResource("1_5tue2")
@@ -99,10 +98,10 @@ highlight_layer = NodePath("../Highlight")
 tile = Vector2i(3, 0)
 
 [node name="UnitPlayer1" parent="GameArea" instance=ExtResource("4_aj7ud")]
-position = Vector2(65, 200)
+position = Vector2(231, 189)
 
 [node name="UnitPlayer2" parent="GameArea" instance=ExtResource("4_aj7ud")]
-position = Vector2(225, 200)
+position = Vector2(265, 216)
 stats = ExtResource("8_6w4xk")
 
 [node name="EnemyArea" type="TileMapLayer" parent="." node_paths=PackedStringArray("unit_grid", "tile_highlighter")]
@@ -142,6 +141,22 @@ stats = ExtResource("14_bjorn_enemy")
 position = Vector2(137, 12)
 stats = ExtResource("15_mage_enemy")
 
+[node name="Unit3" parent="EnemyArea" instance=ExtResource("4_aj7ud")]
+position = Vector2(100, 48)
+stats = ExtResource("14_bjorn_enemy")
+
+[node name="Unit4" parent="EnemyArea" instance=ExtResource("4_aj7ud")]
+position = Vector2(200, 48)
+stats = ExtResource("14_bjorn_enemy")
+
+[node name="Unit5" parent="EnemyArea" instance=ExtResource("4_aj7ud")]
+position = Vector2(100, 12)
+stats = ExtResource("14_bjorn_enemy")
+
+[node name="Unit6" parent="EnemyArea" instance=ExtResource("4_aj7ud")]
+position = Vector2(200, 12)
+stats = ExtResource("14_bjorn_enemy")
+
 [node name="Bench" type="TileMapLayer" parent="."]
 visible = false
 position = Vector2(160, 320)
@@ -172,3 +187,7 @@ player_stats = ExtResource("12_vmsrg")
 script = ExtResource("13_battle")
 enemy_area = NodePath("../EnemyArea")
 game_area = NodePath("../GameArea")
+
+[node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
+visible = false
+navigation_polygon = SubResource("NavigationPolygon_enemy_path")

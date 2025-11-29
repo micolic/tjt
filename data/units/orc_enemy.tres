@@ -4,13 +4,14 @@
 
 [resource]
 script = ExtResource("1_d6p4t")
-name = "Bjorn"
+name = "Orc"
 team = 1
-max_health = 500
+max_health = 100
 max_mana = 100
-attack_damage = 50
+attack_damage = 10
 attack_speed = 0.7
 armor = 5
 magic_resist = 20
 attack_range = 1
+aggro_range = 7
 metadata/_custom_type_script = "uid://xf3ubegfusxx"

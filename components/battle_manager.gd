@@ -16,7 +16,7 @@ enum State {
 	ENDED         ## Battle is over
 }
 
-@export var preparation_time: float = 10.0
+@export var preparation_time: float = 0.0
 @export var enemy_area: PlayArea
 @export var game_area: PlayArea
 
@@ -83,12 +83,9 @@ func check_win_condition() -> void:
 	if current_state != State.BATTLE:
 		return
 	
-	var player_units := game_area.unit_grid.get_all_units()
 	var enemy_units := enemy_area.unit_grid.get_all_units()
 	
-	if player_units.is_empty():
-		end_battle(UnitStats.Team.ENEMY)
-	elif enemy_units.is_empty():
+	if enemy_units.is_empty():
 		end_battle(UnitStats.Team.PLAYER)
 
 

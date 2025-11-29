@@ -23,12 +23,15 @@ var update_timer: float = 0.0
 ## Reference to play areas for pathfinding
 var play_area: PlayArea
 var enemy_area: PlayArea
+var navigation_agent: NavigationAgent2D
 
 
 ## Called when the node enters the scene tree.
 func _ready() -> void:
 	unit = get_parent()
 	assert(unit, "UnitAI must be a child of Unit!")
+	
+	navigation_agent = unit.get_node_or_null("NavigationAgent2D")
 	
 	# Find play areas from the scene
 	_find_play_areas()
@@ -37,6 +40,10 @@ func _ready() -> void:
 	if unit.stats:
 		# Combat movement speed - balanced for visible but quick movement
 		movement_speed = 50.0  # pixels per second
+	
+	# Connect navigation signals if available
+	if navigation_agent:
+		navigation_agent.velocity_computed.connect(_on_velocity_computed)
 
 
 ## Process AI logic.
@@ -65,10 +72,20 @@ func _process(delta: float) -> void:
 			# In range and ready to attack
 			_try_attack()
 		elif distance_to_target > attack_range_pixels and (not current_target.has_meta("is_dummy_target") or unit.stats.team == UnitStats.Team.ENEMY):
-			# Out of range - move closer continuously each frame (only if not dummy target for allies)
-			var direction: Vector2 = (current_target.global_position - unit.global_position).normalized()
-			var distance_to_move: float = movement_speed * delta
-			unit.global_position += direction * distance_to_move
+			# Out of range - move closer
+			if navigation_agent:
+				# Use navigation pathfinding
+				navigation_agent.target_position = current_target.global_position
+				var next_position = navigation_agent.get_next_path_position()
+				var direction = (next_position - unit.global_position).normalized()
+				var distance_to_move = movement_speed * delta
+				if unit.global_position.distance_to(next_position) > distance_to_move:
+					unit.global_position += direction * distance_to_move
+			else:
+				# Direct movement
+				var direction: Vector2 = (current_target.global_position - unit.global_position).normalized()
+				var distance_to_move: float = movement_speed * delta
+				unit.global_position += direction * distance_to_move
 			#print("  %s: moving towards %s (%.1f/%.1f px)" % [unit.stats.name, current_target.stats.name, distance_to_target, attack_range_pixels])
 
 
@@ -188,7 +205,7 @@ func _perform_attack(target) -> void:
 	var damage: int = unit.stats.get_attack_damage()
 	
 	# Apply damage
-	target.stats.health -= damage
+	target.current_health -= damage
 	
 	attack_performed.emit(target)
 	
@@ -308,3 +325,8 @@ func _apply_separation(delta: float) -> void:
 		separation_vector = separation_vector.normalized()
 		var push_distance: float = separation_force * delta
 		unit.global_position += separation_vector * push_distance
+
+
+func _on_velocity_computed(safe_velocity: Vector2) -> void:
+	# Apply computed velocity from navigation
+	unit.global_position += safe_velocity * get_process_delta_time()

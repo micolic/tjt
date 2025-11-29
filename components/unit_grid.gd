@@ -20,6 +20,9 @@ func add_unit(tile: Vector2i, unit: Node) -> void:
 
 ## Removes a unit from the specified tile and emits a change signal.
 func remove_unit(tile: Vector2i) -> void:
+	if not units.has(tile):
+		return
+	
 	var unit := units[tile] as Node
 
 	if not unit:

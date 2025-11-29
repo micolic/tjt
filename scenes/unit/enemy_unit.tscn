@@ -1,9 +1,9 @@
-[gd_scene load_steps=12 format=3 uid="uid://enemy_unit_scene"]
+[gd_scene load_steps=12 format=3 uid="uid://b6qhda3yrw385"]
 
-[ext_resource type="Texture2D" uid="uid://cx1ivjobggp8n" path="res://asset/sprites/monsters.png" id="1_fmv3f"]
-[ext_resource type="Script" uid="uid://enemy_unit_script" path="res://scenes/unit/enemy_unit.gd" id="1_fvc8g"]
+[ext_resource type="Script" uid="uid://drq30qsq8ig3r" path="res://scenes/unit/enemy_unit.gd" id="1_fvc8g"]
 [ext_resource type="Resource" uid="uid://c8g5xn6wnajf" path="res://data/units/orc_enemy.tres" id="2_vh40f"]
 [ext_resource type="Material" uid="uid://bb8m5fhpi4wqn" path="res://asset/shaders/2d_outline_shader.tres" id="3_3po7s"]
+[ext_resource type="Texture2D" uid="uid://ct4xk88g67xlv" path="res://asset/sprites/monsters.png" id="4_jn085"]
 [ext_resource type="Script" uid="uid://brk3dd83fa5el" path="res://components/velocity_based_rotation.gd" id="5_vgvef"]
 [ext_resource type="Script" uid="uid://djfhyq8ravn6l" path="res://components/unit_ai.gd" id="8_ai"]
 
@@ -42,7 +42,7 @@ metadata/_edit_group_ = true
 material = ExtResource("3_3po7s")
 
 [node name="Skin" type="Sprite2D" parent="Visuals"]
-texture = ExtResource("1_fmv3f")
+texture = ExtResource("4_jn085")
 offset = Vector2(16, 8)
 region_enabled = true
 region_rect = Rect2(0, 0, 32, 32)
@@ -81,4 +81,7 @@ x_velocity_threshold = 10.0
 
 [node name="UnitAI" type="Node" parent="."]
 script = ExtResource("8_ai")
-enabled = false
+
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
+path_desired_distance = 4.0
+target_desired_distance = 4.0

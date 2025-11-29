@@ -3,6 +3,9 @@ class_name Unit
 extends Area2D
 
 signal quick_sell_pressed
+signal health_reached_zero
+signal health_changed(new_health: int)
+signal mana_bar_filled
 
 const CELL_SIZE := Vector2(32, 32)
 
@@ -18,6 +21,8 @@ const CELL_SIZE := Vector2(32, 32)
 var is_hovered := false
 var _health_flash_id: int = 0
 var _skin_flash_id: int = 0
+var current_health: int : set = _set_current_health
+var current_mana: int : set = _set_current_mana
 
 const _health_flash_duration: float = 0.05
 const _skin_flash_duration: float = 0.1
@@ -31,6 +36,13 @@ func _ready() -> void:
 		# Connect stats signals
 		if stats:
 			_connect_stats_signals()
+		
+		# Add to unit grid
+		var play_area = get_parent()
+		if play_area and play_area.unit_grid:
+			var tile = play_area.get_tile_from_global(global_position)
+			if play_area.is_tile_within_bounds(tile) and not play_area.unit_grid.is_tile_occupied(tile):
+				play_area.unit_grid.add_unit(tile, self)
 
 
 ## Connects to unit stats signals.
@@ -39,16 +51,16 @@ func _connect_stats_signals() -> void:
 		return
 	
 	# Prevent duplicate connections
-	if stats.health_reached_zero.is_connected(_on_health_reached_zero):
+	if health_reached_zero.is_connected(_on_health_reached_zero):
 		return
 	
 	# Check if already connected to avoid duplicate connections
-	if not stats.health_reached_zero.is_connected(_on_health_reached_zero):
-		stats.health_reached_zero.connect(_on_health_reached_zero)
+	if not health_reached_zero.is_connected(_on_health_reached_zero):
+		health_reached_zero.connect(_on_health_reached_zero)
 	
 	# Connect health_changed signal (use lambda to ignore the health value argument)
-	if not stats.health_changed.is_connected(func(_new_health): _update_health_bar()):
-		stats.health_changed.connect(func(_new_health): _update_health_bar())
+	if not health_changed.is_connected(func(_new_health): _update_health_bar()):
+		health_changed.connect(func(_new_health): _update_health_bar())
 	
 	# Add to team groups (only if not already in group)
 	add_to_group("units")  # Add to global units group
@@ -60,8 +72,8 @@ func _connect_stats_signals() -> void:
 			add_to_group("enemy_units")
 	
 	# Initialize health and mana
-	stats.reset_health()
-	stats.reset_mana()
+	current_health = stats.max_health
+	current_mana = stats.starting_mana
 	_update_health_bar()
 	_update_mana_bar()
 
@@ -72,7 +84,7 @@ func _update_health_bar() -> void:
 		return
 	
 	health_bar.max_value = stats.get_max_health()
-	health_bar.value = stats.health
+	health_bar.value = current_health
 	
 	# Update health bar color based on health percentage
 	_update_health_bar_color()
@@ -86,7 +98,7 @@ func _update_health_bar_color() -> void:
 	if not stats or not health_bar:
 		return
 	
-	var health_percent: float = float(stats.health) / float(stats.get_max_health())
+	var health_percent: float = float(current_health) / float(stats.get_max_health())
 	var bar_color: Color
 	
 	# Color gradient with precise breakpoints:
@@ -187,12 +199,33 @@ func _update_mana_bar() -> void:
 		return
 	
 	mana_bar.max_value = stats.max_mana
-	mana_bar.value = stats.mana
+	mana_bar.value = current_mana
+
+
+## Sets current health and emits signals.
+func _set_current_health(value: int) -> void:
+	current_health = value
+	health_changed.emit(current_health)
+	if current_health <= 0:
+		health_reached_zero.emit()
+
+
+## Sets current mana and emits signal if full.
+func _set_current_mana(value: int) -> void:
+	current_mana = value
+	if current_mana >= stats.max_mana:
+		mana_bar_filled.emit()
 
 
 ## Called when unit's health reaches zero.
 func _on_health_reached_zero() -> void:
 	print("%s died!" % stats.name)
+	
+	# Remove from grid
+	var play_area = get_parent()
+	if play_area and play_area.has_method("get_tile_from_global") and play_area.unit_grid:
+		var tile = play_area.get_tile_from_global(global_position)
+		play_area.unit_grid.remove_unit(tile)
 	
 	# Notify battle manager
 	var battle_manager := get_tree().get_first_node_in_group("battle_manager")

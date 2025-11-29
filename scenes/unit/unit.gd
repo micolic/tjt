@@ -277,9 +277,13 @@ func _on_drag_started() -> void:
 func _on_drag_canceled(starting_position: Vector2) -> void:
 	reset_after_dragging(starting_position)
 
-## Highlights the unit when the mouse enters, unless dragging.
+## Highlights the unit when the mouse enters, unless dragging or during battle.
 func _on_mouse_entered() -> void:
 	if drag_and_drop.dragging:
+		return
+	
+	var battle_manager = get_tree().get_first_node_in_group("battle_manager")
+	if battle_manager and battle_manager.current_state == 1:  # State.BATTLE
 		return
 	
 	is_hovered = true

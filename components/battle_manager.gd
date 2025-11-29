@@ -42,6 +42,9 @@ func start_preparation() -> void:
 	_change_state(State.PREPARATION)
 	prep_timer = preparation_time
 	preparation_started.emit()
+	
+	# Enable tile highlighters for unit placement
+	_enable_tile_highlighters(true)
 
 
 ## Starts the battle phase.
@@ -51,6 +54,12 @@ func start_battle() -> void:
 	
 	# Enable AI on all units
 	_enable_ai_for_units(true)
+	
+	# Disable tile highlighters during battle
+	_enable_tile_highlighters(false)
+	
+	# Clear any unit highlights
+	_clear_all_unit_highlights()
 
 
 ## Ends the battle with a winner.
@@ -76,6 +85,24 @@ func _enable_ai_for_units(enabled: bool) -> void:
 		if unit.has_node("UnitAI"):
 			var ai = unit.get_node("UnitAI")
 			ai.enabled = enabled
+
+
+## Enables or disables tile highlighters in play areas.
+func _enable_tile_highlighters(enabled: bool) -> void:
+	if game_area and game_area.tile_highlighter:
+		game_area.tile_highlighter.enabled = enabled
+	if enemy_area and enemy_area.tile_highlighter:
+		enemy_area.tile_highlighter.enabled = enabled
+
+
+## Clears highlights on all units.
+func _clear_all_unit_highlights() -> void:
+	var all_units := get_tree().get_nodes_in_group("units")
+	
+	for unit in all_units:
+		if unit.has_node("OutlineHighlighter"):
+			var highlighter = unit.get_node("OutlineHighlighter")
+			highlighter.clear_highlight()
 
 
 ## Checks win condition - called when a unit dies.

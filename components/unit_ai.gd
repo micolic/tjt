@@ -174,7 +174,7 @@ func _perform_attack(target) -> void:
 	# Flash attacker
 	_flash_unit(unit)
 	# Flash target (will be red from health bar flash already)
-	_flash_unit(target, Color.ORANGE)
+	_flash_unit(target, Color.RED)
 
 
 ## Simple A* pathfinding (placeholder - will improve later).
@@ -237,17 +237,21 @@ func _find_play_areas() -> void:
 
 ## Flashes a unit sprite with a color for visual feedback.
 func _flash_unit(target_unit, color: Color = Color.WHITE) -> void:
-	if not target_unit or not target_unit.has_node("Visuals/Skin"):
-		return
-	
-	var skin = target_unit.get_node("Visuals/Skin")
-	var original_color = skin.modulate
-	skin.modulate = color
-	
-	# Reset color after short delay
-	await get_tree().create_timer(0.15).timeout
-	if is_instance_valid(skin):
-		skin.modulate = original_color
+	if target_unit and target_unit.has_method("flash_skin"):
+		target_unit.flash_skin(color)
+	else:
+		# Fallback for units without flash_skin method
+		if not target_unit or not target_unit.has_node("Visuals/Skin"):
+			return
+		
+		var skin = target_unit.get_node("Visuals/Skin")
+		var original_color = skin.modulate
+		skin.modulate = color
+		
+		# Reset color after short delay
+		await get_tree().create_timer(0.08).timeout
+		if is_instance_valid(skin):
+			skin.modulate = original_color
 
 
 ## Apply separation force to avoid unit overlap.

@@ -16,6 +16,11 @@ const CELL_SIZE := Vector2(32, 32)
 @onready var outline_highlighter: OutlineHighlighter = $OutlineHighlighter
 
 var is_hovered := false
+var _health_flash_id: int = 0
+var _skin_flash_id: int = 0
+
+const _health_flash_duration: float = 0.05
+const _skin_flash_duration: float = 0.1
 
 ## Called when the node enters the scene tree. Connects drag signals if not in editor.
 func _ready() -> void:
@@ -137,8 +142,43 @@ func _flash_health_bar() -> void:
 	if not health_bar:
 		return
 	
-	# Just a visual feedback - no actual effect needed
-	pass
+	# Increment flash ID to cancel previous flashes
+	_health_flash_id += 1
+	var current_id = _health_flash_id
+	
+	# Create white stylebox
+	var white_style = StyleBoxFlat.new()
+	white_style.bg_color = Color.WHITE
+	white_style.border_width_left = 1
+	white_style.border_width_top = 1
+	white_style.border_width_right = 1
+	white_style.border_width_bottom = 1
+	white_style.border_color = Color(0.13, 0.13, 0.13, 1)
+	
+	# Override the fill style
+	health_bar.add_theme_stylebox_override("fill", white_style)
+	
+	# Schedule removal
+	await get_tree().create_timer(_health_flash_duration).timeout
+	if current_id == _health_flash_id:
+		health_bar.remove_theme_stylebox_override("fill")
+
+
+## Flash the unit's skin for visual feedback.
+func flash_skin(flash_color: Color = Color.RED) -> void:
+	if not skin:
+		return
+	
+	# Increment flash ID to cancel previous flashes
+	_skin_flash_id += 1
+	var current_id = _skin_flash_id
+	
+	skin.modulate = flash_color
+	
+	# Schedule reset
+	await get_tree().create_timer(_skin_flash_duration).timeout
+	if current_id == _skin_flash_id:
+		skin.modulate = Color(1, 1, 1, 1)
 
 
 ## Updates mana bar display.

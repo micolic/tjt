@@ -11,6 +11,7 @@ skin_coordinates = Vector2i(2, 2)
 max_health = 400
 max_mana = 100
 starting_mana = 50
+mana_regen = 5.0
 attack_damage = 40
 ability_power = 50
 attack_speed = 0.8

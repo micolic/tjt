@@ -8,6 +8,7 @@ name = "Orc"
 team = 1
 max_health = 100
 max_mana = 100
+mana_regen = 2.0
 attack_damage = 10
 attack_speed = 0.7
 armor = 5

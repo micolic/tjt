@@ -6,7 +6,7 @@ signal quick_sell_pressed
 signal health_reached_zero
 signal health_changed(new_health: int)
 signal mana_bar_filled
-signal mana_changed(new_mana: int)
+signal mana_changed(new_mana: int)  # Receives int for UI display
 
 const CELL_SIZE := Vector2(32, 32)
 
@@ -23,7 +23,7 @@ var is_hovered := false
 var _health_flash_id: int = 0
 var _skin_flash_id: int = 0
 var current_health: int : set = _set_current_health
-var current_mana: int : set = _set_current_mana
+var current_mana: float : set = _set_current_mana
 
 const _health_flash_duration: float = 0.05
 const _skin_flash_duration: float = 0.1
@@ -44,6 +44,28 @@ func _ready() -> void:
 			var tile = play_area.get_tile_from_global(global_position)
 			if play_area.is_tile_within_bounds(tile) and not play_area.unit_grid.is_tile_occupied(tile):
 				play_area.unit_grid.add_unit(tile, self)
+
+
+## Processes mana regeneration.
+func _process(delta: float) -> void:
+	# Mana regeneration - only during BATTLE
+	if not stats:
+		return
+		
+	var battle_manager = get_tree().get_first_node_in_group("battle_manager")
+	if not battle_manager is BattleManager:
+		return
+		
+	# Only regenerate during battle
+	if battle_manager.current_state != BattleManager.State.BATTLE:
+		return
+	
+	if current_mana < stats.max_mana:
+		var regen_amount = stats.mana_regen * delta
+		if regen_amount > 0:
+			current_mana = min(current_mana + regen_amount, stats.max_mana)
+			_update_mana_bar()
+
 
 
 ## Connects to unit stats signals.
@@ -212,8 +234,9 @@ func _set_current_health(value: int) -> void:
 
 
 ## Sets current mana and emits signal if full.
-func _set_current_mana(value: int) -> void:
+func _set_current_mana(value: float) -> void:
 	current_mana = value
+	mana_changed.emit(int(current_mana))
 	mana_changed.emit(current_mana)
 	if current_mana >= stats.max_mana:
 		mana_bar_filled.emit()

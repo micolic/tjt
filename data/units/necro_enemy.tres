@@ -12,6 +12,7 @@ team = 1
 max_health = 60
 max_mana = 100
 starting_mana = 50
+mana_regen = 4.0
 attack_damage = 10
 ability_power = 50
 attack_speed = 0.8

@@ -45,6 +45,7 @@ const MOVE_ONE_TILE_SPEED := 1.0
 @export var max_health: int
 @export var max_mana: int
 @export var starting_mana: int
+@export var mana_regen: float
 @export var attack_damage: int
 @export var ability_power: int
 @export var attack_speed: float

@@ -26,6 +26,7 @@ var prep_timer: float = 0.0
 
 ## Called when the node enters the scene tree.
 func _ready() -> void:
+	add_to_group("battle_manager")
 	start_preparation()
 
 

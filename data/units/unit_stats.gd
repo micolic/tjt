@@ -56,7 +56,9 @@ const MOVE_ONE_TILE_SPEED := 1.0
 @export_range(1, 10) var aggro_range: int = 3
 @export var melee_attack: PackedScene
 @export var ranged_attack: PackedScene
-@export var ability: PackedScene
+@export var ability: PackedScene  # Legacy - keeping for compatibility
+@export var ability_resource: Ability  # New ability system
+@export var passive_ability: PassiveAbility  # Passive ability (stat bonuses)
 @export var auto_attack_sound: AudioStream
 
 var health: int : set = _set_health

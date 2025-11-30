@@ -25,7 +25,7 @@ var _health_flash_id: int = 0
 var _skin_flash_id: int = 0
 var current_health: float : set = _set_current_health
 var current_mana: float : set = _set_current_mana
-var _previous_health: float = 0.0  # Track for damage calculation
+var ability_on_cooldown: bool = false
 
 const _health_flash_duration: float = 0.05
 const _skin_flash_duration: float = 0.1
@@ -35,6 +35,9 @@ func _ready() -> void:
 	if not Engine.is_editor_hint():
 		drag_and_drop.drag_started.connect(_on_drag_started)
 		drag_and_drop.drag_canceled.connect(_on_drag_canceled)
+		
+		# Connect mana bar filled for ability casting
+		mana_bar_filled.connect(_on_mana_bar_filled)
 		
 		# Connect stats signals
 		if stats:
@@ -107,6 +110,10 @@ func _connect_stats_signals() -> void:
 	else:
 		if not is_in_group("enemy_units"):
 			add_to_group("enemy_units")
+	
+	# Apply passive ability if present
+	if stats.passive_ability:
+		stats.passive_ability.apply(self)
 	
 	# Initialize health and mana
 	current_health = stats.max_health
@@ -365,3 +372,53 @@ func _on_mouse_exited() -> void:
 	is_hovered = false
 	outline_highlighter.clear_highlight()
 	z_index = 0
+
+
+## Called when mana bar is filled - cast ability if available
+func _on_mana_bar_filled() -> void:
+	if not stats or not stats.ability_resource:
+		return
+	
+	if ability_on_cooldown:
+		print("[Ability] %s ability on cooldown!" % stats.name)
+		return
+	
+	# Cast the ability
+	cast_ability()
+
+
+## Casts the unit's ability
+func cast_ability() -> void:
+	if not stats or not stats.ability_resource:
+		return
+	
+	var ability = stats.ability_resource
+	
+	# Get valid targets
+	var targets = ability.get_valid_targets(self)
+	
+	if targets.is_empty():
+		var range_msg = ""
+		if ability.cast_range > 0:
+			range_msg = " (range: %.0f)" % ability.cast_range
+		print("[Ability] No valid targets for %s's %s%s!" % [stats.name, ability.ability_name, range_msg])
+		# Don't consume mana if no targets
+		return
+	
+	# Consume mana
+	current_mana = 0
+	
+	# Execute ability
+	print("[Ability] %s casts %s!" % [stats.name, ability.ability_name])
+	ability.execute(self, targets)
+	
+	# Start cooldown if needed
+	if ability.cooldown > 0:
+		ability_on_cooldown = true
+		get_tree().create_timer(ability.cooldown).timeout.connect(_on_ability_cooldown_finished)
+
+
+## Called when ability cooldown finishes
+func _on_ability_cooldown_finished() -> void:
+	ability_on_cooldown = false
+	print("[Ability] %s ability ready!" % stats.name)

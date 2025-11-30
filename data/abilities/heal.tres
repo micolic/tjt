@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="HealAbility" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/abilities/heal_ability.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ability_name = "Heal"
+description = "Restores 30 health to self."
+target_type = 0
+mana_cost = 100.0
+cooldown = 5.0
+cast_time = 0.0
+cast_range = 0.0
+heal_amount = 30.0

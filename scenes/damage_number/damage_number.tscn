@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://cr8qvxm5jdp7w"]
 
 [ext_resource type="Script" path="res://scenes/damage_number/damage_number.gd" id="1_x7k8m"]
-[ext_resource type="FontFile" uid="uid://bqadkij2arwah" path="res://asset/font/abaddon_bold.ttf" id="2_h5n3p"]
+[ext_resource type="FontFile" uid="uid://wqfms7k4ykv2" path="res://asset/font/abaddon_bold.ttf" id="2_h5n3p"]
 
 [node name="DamageNumber" type="Control"]
 layout_mode = 3

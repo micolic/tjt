@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="AOEDamageAbility" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://data/abilities/aoe_damage_ability.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+ability_name = "Arcane Explosion"
+description = "Damages all enemies for 25 damage."
+target_type = 2
+mana_cost = 100.0
+cooldown = 4.0
+cast_time = 0.0
+cast_range = 0.0
+damage = 25.0

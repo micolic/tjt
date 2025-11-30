@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="FireballAbility" load_steps=2 format=3 uid="uid://bk4bd824lx8fi"]
+
+[ext_resource type="Script" uid="uid://b4a2sm1y0jxmj" path="res://data/abilities/fireball_ability.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+damage = 100.0
+ability_name = "Fireball"
+description = "Launches a fireball at the nearest enemy within range, dealing 100 damage."
+cooldown = 3.0
+cast_range = 200.0

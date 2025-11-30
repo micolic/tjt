@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3 uid="uid://cks8r0jxncpqo"]
+[gd_resource type="Resource" script_class="UnitStats" load_steps=3 format=3 uid="uid://cks8r0jxncpqo"]
 
 [ext_resource type="Script" uid="uid://xf3ubegfusxx" path="res://data/units/unit_stats.gd" id="1_85r4g"]
+[ext_resource type="Resource" uid="uid://bk4bd824lx8fi" path="res://data/abilities/fireball.tres" id="2_fireball"]
 
 [resource]
 script = ExtResource("1_85r4g")
@@ -10,7 +11,7 @@ gold_cost = 2
 skin_coordinates = Vector2i(2, 2)
 max_health = 400
 max_mana = 100
-starting_mana = 50
+starting_mana = 90
 mana_regen = 5.0
 attack_damage = 40
 ability_power = 50
@@ -19,4 +20,5 @@ armor = 2
 magic_resist = 30
 attack_range = 3
 aggro_range = 5
+ability_resource = ExtResource("2_fireball")
 metadata/_custom_type_script = "uid://xf3ubegfusxx"

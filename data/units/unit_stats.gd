@@ -43,6 +43,7 @@ const MOVE_ONE_TILE_SPEED := 1.0
 @export_category("Battle")
 @export var team: Team
 @export var max_health: int
+@export var health_regen: float
 @export var max_mana: int
 @export var starting_mana: int
 @export var mana_regen: float

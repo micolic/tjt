@@ -22,7 +22,7 @@ const CELL_SIZE := Vector2(32, 32)
 var is_hovered := false
 var _health_flash_id: int = 0
 var _skin_flash_id: int = 0
-var current_health: int : set = _set_current_health
+var current_health: float : set = _set_current_health
 var current_mana: float : set = _set_current_mana
 
 const _health_flash_duration: float = 0.05
@@ -46,9 +46,9 @@ func _ready() -> void:
 				play_area.unit_grid.add_unit(tile, self)
 
 
-## Processes mana regeneration.
+## Processes health and mana regeneration.
 func _process(delta: float) -> void:
-	# Mana regeneration - only during BATTLE
+	# Regeneration - only during BATTLE
 	if not stats:
 		return
 		
@@ -60,10 +60,17 @@ func _process(delta: float) -> void:
 	if battle_manager.current_state != BattleManager.State.BATTLE:
 		return
 	
+	# Health regeneration
+	if current_health < stats.max_health and stats.health_regen > 0:
+		var health_regen_amount = stats.health_regen * delta
+		current_health = min(current_health + health_regen_amount, stats.max_health)
+		_update_health_bar()
+	
+	# Mana regeneration
 	if current_mana < stats.max_mana:
-		var regen_amount = stats.mana_regen * delta
-		if regen_amount > 0:
-			current_mana = min(current_mana + regen_amount, stats.max_mana)
+		var mana_regen_amount = stats.mana_regen * delta
+		if mana_regen_amount > 0:
+			current_mana = min(current_mana + mana_regen_amount, stats.max_mana)
 			_update_mana_bar()
 
 
@@ -111,9 +118,6 @@ func _update_health_bar() -> void:
 	
 	# Update health bar color based on health percentage
 	_update_health_bar_color()
-	
-	# Flash effect when taking damage
-	_flash_health_bar()
 
 
 ## Update health bar color gradient based on health percentage.
@@ -226,9 +230,9 @@ func _update_mana_bar() -> void:
 
 
 ## Sets current health and emits signals.
-func _set_current_health(value: int) -> void:
+func _set_current_health(value: float) -> void:
 	current_health = value
-	health_changed.emit(current_health)
+	health_changed.emit(int(current_health))
 	if current_health <= 0:
 		health_reached_zero.emit()
 

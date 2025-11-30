@@ -1,0 +1,24 @@
+[gd_scene load_steps=3 format=3 uid="uid://cr8qvxm5jdp7w"]
+
+[ext_resource type="Script" path="res://scenes/damage_number/damage_number.gd" id="1_x7k8m"]
+[ext_resource type="FontFile" uid="uid://bqadkij2arwah" path="res://asset/font/abaddon_bold.ttf" id="2_h5n3p"]
+
+[node name="DamageNumber" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+mouse_filter = 2
+script = ExtResource("1_x7k8m")
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 0
+offset_left = -20.0
+offset_top = -10.0
+offset_right = 20.0
+offset_bottom = 10.0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("2_h5n3p")
+theme_override_font_sizes/font_size = 20
+text = "999"
+horizontal_alignment = 1
+vertical_alignment = 1

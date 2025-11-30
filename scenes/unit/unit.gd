@@ -9,6 +9,7 @@ signal mana_bar_filled
 signal mana_changed(new_mana: int)  # Receives int for UI display
 
 const CELL_SIZE := Vector2(32, 32)
+const DamageNumberScene = preload("res://scenes/damage_number/damage_number.tscn")
 
 @export var stats: UnitStats : set = set_stats
 
@@ -24,6 +25,7 @@ var _health_flash_id: int = 0
 var _skin_flash_id: int = 0
 var current_health: float : set = _set_current_health
 var current_mana: float : set = _set_current_mana
+var _previous_health: float = 0.0  # Track for damage calculation
 
 const _health_flash_duration: float = 0.05
 const _skin_flash_duration: float = 0.1
@@ -51,13 +53,18 @@ func _process(delta: float) -> void:
 	# Regeneration - only during BATTLE
 	if not stats:
 		return
-		
-	var battle_manager = get_tree().get_first_node_in_group("battle_manager")
-	if not battle_manager is BattleManager:
+	
+	# Check if we're in a battle scene (BattleManager only exists during battle)
+	var battle_manager_node = get_tree().get_first_node_in_group("battle_manager")
+	if not battle_manager_node:
 		return
-		
-	# Only regenerate during battle
-	if battle_manager.current_state != BattleManager.State.BATTLE:
+	
+	# Check if it's actually a BattleManager and if we're in BATTLE state
+	if not battle_manager_node.has_method("get") or not "current_state" in battle_manager_node:
+		return
+	
+	# Only regenerate during battle (access via get to avoid type issues)
+	if battle_manager_node.get("current_state") != 1:  # 1 = BATTLE state
 		return
 	
 	# Health regeneration
@@ -228,12 +235,18 @@ func _update_mana_bar() -> void:
 	mana_bar.max_value = stats.max_mana
 	mana_bar.value = current_mana
 
-
 ## Sets current health and emits signals.
 func _set_current_health(value: float) -> void:
+	var damage_taken = current_health - value
 	current_health = value
+	
+	# Spawn damage number if we took damage
+	if damage_taken > 0:
+		_spawn_damage_number(damage_taken)
+	
 	health_changed.emit(int(current_health))
 	if current_health <= 0:
+		health_reached_zero.emit()
 		health_reached_zero.emit()
 
 
@@ -265,6 +278,31 @@ func _on_health_reached_zero() -> void:
 	
 	# Remove from game
 	queue_free()
+
+
+## Spawns a floating damage number above the unit.
+func _spawn_damage_number(damage: float) -> void:
+	if not DamageNumberScene:
+		return
+	
+	var damage_number = DamageNumberScene.instantiate()
+	
+	# Add to the current scene (not root) so it appears in the right layer
+	var current_scene = get_tree().current_scene
+	if current_scene:
+		current_scene.add_child(damage_number)
+	else:
+		get_tree().root.add_child(damage_number)
+	
+	# Position above the unit (Control node uses position, not global_position initially)
+	damage_number.position = global_position + Vector2(0, -20)
+	
+	# Determine color based on damage source (can be expanded later)
+	var color = Color.WHITE
+	
+	# Setup the damage number
+	damage_number.setup(damage, color)
+
 
 ## Handles input events to detect quick sell action when unit is hovered.
 func _input(event: InputEvent) -> void:

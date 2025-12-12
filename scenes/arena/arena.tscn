@@ -53,6 +53,23 @@ offset_right = 130.0
 offset_bottom = 150.0
 grow_vertical = 2
 
+[node name="RightPanel" type="VBoxContainer" parent="UI"]
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_vertical = 2
+alignment = 2
+
+[node name="StartBattleButton" type="Button" parent="UI/RightPanel"]
+layout_mode = 2
+focus_mode = 0
+text = "Start Battle"
+
 [node name="Visuals" type="Node2D" parent="."]
 metadata/_edit_lock_ = true
 metadata/_edit_group_ = true

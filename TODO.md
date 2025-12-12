@@ -2,15 +2,25 @@
 
 ## 🔥 High Priority
 
-### Ability System
-- [ ] Implement ability casting mechanism when mana is full
-- [ ] Create base Ability class/resource
-- [ ] Add ability button/hotkey triggering
-- [ ] Visual effects for ability activation
-- [ ] Cooldown system for abilities
-- [ ] Create sample abilities (fireball, heal, AOE damage, stun, etc.)
-- [ ] Ability targeting system (self, enemy, area)
-- [ ] Mana consumption on ability use
+### Ability System ✅ COMPLETED
+- [x] Implement ability casting mechanism when mana is full
+- [x] Create base Ability class/resource
+- [x] Create Passive Ability system (stat bonuses)
+- [ ] Add ability button/hotkey triggering (auto-cast only for now)
+- [x] Visual effects for ability activation (projectile system)
+- [x] Cooldown system for abilities
+- [x] Create sample abilities (fireball, heal, AOE damage)
+- [x] Ability targeting system (self, enemy, area)
+- [x] Ability range system
+- [x] Mana consumption on ability use
+- **Implemented:**
+  - Base `Ability` resource class with targeting, cooldown, range
+  - `PassiveAbility` for permanent stat bonuses
+  - Fireball (single target, 100 dmg, 200 range, projectile visual)
+  - Heal (self heal, 30 HP)
+  - AOE Damage (all enemies, 25 dmg)
+  - Warrior's Endurance passive (+20% health regen for Bjorn)
+  - Projectile scene with smooth movement and hit detection
 
 ### Wave System
 - [ ] Enemy wave spawner component
@@ -22,15 +32,21 @@
 - [ ] Victory/defeat conditions
 
 ### Visual Polish
-- [ ] Damage numbers (floating text above units)
+- [x] Damage numbers (floating text above units)
+- [x] Projectile visuals for ranged abilities
 - [ ] Particle effects for attacks
   - [ ] Melee hit effects
-  - [ ] Ranged projectile trails
+  - [x] Ranged projectile (fireball implemented)
   - [ ] Critical hit effects
 - [ ] Unit death animations
 - [ ] Screen shake on critical hits/explosions
 - [ ] Attack animations (sprite flipping/rotation)
 - [ ] Ability cast animations
+- **Implemented:**
+  - Damage number system with float up + fade out
+  - Scale based on damage amount
+  - Random horizontal spread
+  - Fireball projectile with smooth flight
 
 ## 🎯 Medium Priority
 
@@ -133,11 +149,12 @@
 - [ ] Transition animations between phases
 
 ## 🐛 Bug Fixes / Technical Debt
-- [ ] Test mana_bar_filled signal usage
+- [x] Test mana_bar_filled signal usage (working!)
+- [x] Fixed mana regeneration system (battle state check)
+- [x] Fixed BattleManager type casting issues
+- [x] Verify all .tres files have health_regen values set
 - [ ] Remove duplicate mana_changed.emit() in _set_current_mana
-- [ ] Verify all .tres files have health_regen values set
 - [ ] Clean up unused _flash_health_bar() function
-- [ ] Add null checks for battle_manager in more places
 - [ ] Consistent naming conventions (snake_case vs PascalCase)
 
 ## 🎨 Asset Needs
@@ -151,19 +168,55 @@
 ---
 
 ## Quick Wins (Easy to implement, high impact)
-1. ⚡ Damage numbers - immediate visual feedback
+1. ✅ **Damage numbers** - immediate visual feedback - DONE!
 2. ⚡ Victory/defeat screen - game flow completion
 3. ⚡ Wave counter UI - player knows progress
 4. ⚡ Unit tooltip on hover - better info display
 5. ⚡ Lock shop button - quality of life
 6. ⚡ Attack sound effects - more satisfying combat
 
-## Next Session Focus
-**Suggestion:** Start with Ability System + Damage Numbers + Wave System
-- These 3 features will make the game feel much more complete
-- Ability system uses existing mana regeneration
-- Damage numbers are quick visual polish
-- Wave system provides actual gameplay loop
+## Session Summary - November 30, 2025
+
+### ✅ Completed Today:
+1. **Damage Number System**
+   - Floating damage text above units
+   - Smooth float up + fade out animation
+   - Scale based on damage (50+ = 1.3x, 100+ = 1.5x)
+   - Random horizontal spread for visual variety
+
+2. **Complete Ability System**
+   - Base `Ability` resource class with targeting, cooldown, range
+   - Auto-cast when mana reaches max
+   - Range-based targeting (units out of range can't be targeted)
+   - Mana consumption and cooldown management
+   
+3. **Active Abilities Implemented**
+   - **Fireball**: Single target, 100 damage, 200 range, 3s cooldown, projectile visual
+   - **Heal**: Self-heal, 30 HP, 5s cooldown
+   - **Arcane Explosion**: AOE all enemies, 25 damage, 4s cooldown
+
+4. **Passive Ability System**
+   - Base `PassiveAbility` class for stat modifications
+   - Support for: HP regen, mana regen, damage, armor, max HP bonuses
+   - **Warrior's Endurance**: +20% health regen for Bjorn
+
+5. **Projectile System**
+   - Smooth movement toward target
+   - Hit detection and damage application
+   - Visual feedback on impact
+   - Color customization per ability
+
+6. **Bug Fixes**
+   - Fixed mana regeneration (only during BATTLE state)
+   - Fixed BattleManager type casting errors
+   - Added proper null checks for battle state
+   - Verified .tres files have correct stat values
+
+### 🎯 Next Session Priorities:
+1. **Wave System** - Automatic enemy spawning in progressive waves
+2. **Particle Effects** - Melee hits, critical strikes, explosions
+3. **Victory/Defeat Screen** - End game UI
+4. **More Abilities** - Stun, slow, damage over time effects
 
 ---
-*Last Updated: November 30, 2025*
+*Last Updated: November 30, 2025 - Major progress on ability system!*

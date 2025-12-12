@@ -33,9 +33,12 @@ func _ready() -> void:
 ## Process timer during preparation phase.
 func _process(delta: float) -> void:
 	if current_state == State.PREPARATION:
-		prep_timer -= delta
-		if prep_timer <= 0:
-			start_battle()
+		# Only auto-decrement timer when a positive preparation_time was configured.
+		# If preparation_time == 0, preparation waits until manually started (button).
+		if prep_timer > 0:
+			prep_timer -= delta
+			if prep_timer <= 0:
+				start_battle()
 
 
 ## Starts the preparation phase.

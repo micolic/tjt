@@ -196,19 +196,24 @@ func _try_attack() -> void:
 func _perform_attack(target) -> void:
 	if not target or not target.stats:
 		return
-	
+
 	# Prevent unit from attacking itself
 	if target == unit:
 		return
-	
+
 	# Calculate damage
 	var damage: int = unit.stats.get_attack_damage()
-	
-	# Apply damage
-	target.current_health -= damage
-	
+
+	# Apply damage using a common method if available, otherwise fallback to stats
+	if target.has_method("apply_damage"):
+		target.apply_damage(damage)
+	else:
+		# Fallback: adjust resource health which will emit signals
+		if target.stats:
+			target.stats.health = max(target.stats.health - damage, 0)
+
 	attack_performed.emit(target)
-	
+
 	# Flash attacker
 	_flash_unit(unit)
 	# Flash target (will be red from health bar flash already)

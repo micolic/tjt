@@ -418,6 +418,11 @@ func cast_ability() -> void:
 		get_tree().create_timer(ability.cooldown).timeout.connect(_on_ability_cooldown_finished)
 
 
+## Apply damage to this unit (uniform interface for AI/abilities).
+func apply_damage(damage: int) -> void:
+	current_health = max(current_health - damage, 0)
+
+
 ## Called when ability cooldown finishes
 func _on_ability_cooldown_finished() -> void:
 	ability_on_cooldown = false

@@ -186,6 +186,12 @@ func _update_mana_bar() -> void:
 func _on_health_reached_zero() -> void:
 	print("%s died!" % stats.name)
 
+	# Remove from grid (same logic as Unit)
+	var play_area = get_parent()
+	if play_area and play_area.has_method("get_tile_from_global") and play_area.unit_grid:
+		var tile = play_area.get_tile_from_global(global_position)
+		play_area.unit_grid.remove_unit(tile)
+
 	# Notify battle manager
 	var battle_manager := get_tree().get_first_node_in_group("battle_manager")
 	if battle_manager:
@@ -195,6 +201,12 @@ func _on_health_reached_zero() -> void:
 
 	# Remove from game
 	queue_free()
+
+
+## Apply damage to this enemy unit (uniform interface for AI/abilities).
+func apply_damage(damage: int) -> void:
+	if stats:
+		stats.health = max(stats.health - damage, 0)
 
 
 ## Sets the unit's stats and updates the skin position accordingly.

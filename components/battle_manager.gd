@@ -55,9 +55,8 @@ func start_preparation() -> void:
 func start_battle() -> void:
 	_change_state(State.BATTLE)
 	battle_started.emit()
-	
-	# Enable AI on all units
-	_enable_ai_for_units(true)
+	# NOTE: AI enabling is performed after any dynamic spawns (e.g. Arena)
+	# Consumers should call `enable_ai_for_all(true)` once all units are present.
 	
 	# Disable tile highlighters during battle
 	_enable_tile_highlighters(false)
@@ -73,6 +72,13 @@ func end_battle(winner: UnitStats.Team) -> void:
 	
 	# Disable AI on all units
 	_enable_ai_for_units(false)
+
+
+## Public helper to enable/disable AI on all units. Useful when units are spawned
+## dynamically (Arena spawns enemies after battle_started) so caller can enable AI
+## after spawns complete.
+func enable_ai_for_all(enabled: bool) -> void:
+	_enable_ai_for_units(enabled)
 
 
 ## Changes the current state and emits signal.

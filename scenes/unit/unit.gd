@@ -26,6 +26,7 @@ var _skin_flash_id: int = 0
 var current_health: float : set = _set_current_health
 var current_mana: float : set = _set_current_mana
 var ability_on_cooldown: bool = false
+var _mana_retry_task_running: bool = false
 
 const _health_flash_duration: float = 0.05
 const _skin_flash_duration: float = 0.1
@@ -384,14 +385,24 @@ func _on_mana_bar_filled() -> void:
 		return
 	
 	# Cast the ability
-	cast_ability()
+	var cast_ok := cast_ability()
+	# If no valid targets, retry every second while mana stays full
+	if not cast_ok and not ability_on_cooldown and current_mana >= stats.max_mana and not _mana_retry_task_running:
+		_mana_retry_task_running = true
+		# start async retry loop
+		while current_mana >= stats.max_mana and not ability_on_cooldown:
+			await get_tree().create_timer(1.0).timeout
+			if cast_ability():
+				break
+			# loop continues until cast succeeds or mana changes/cooldown starts
+		_mana_retry_task_running = false
 
 
 ## Casts the unit's ability
-func cast_ability() -> void:
+func cast_ability() -> bool:
 	if not stats or not stats.ability_resource:
-		return
-	
+		return false
+
 	var ability = stats.ability_resource
 	
 	# Get valid targets
@@ -403,7 +414,7 @@ func cast_ability() -> void:
 			range_msg = " (range: %.0f)" % ability.cast_range
 		print("[Ability] No valid targets for %s's %s%s!" % [stats.name, ability.ability_name, range_msg])
 		# Don't consume mana if no targets
-		return
+		return false
 	
 	# Consume mana
 	current_mana = 0
@@ -411,11 +422,13 @@ func cast_ability() -> void:
 	# Execute ability
 	print("[Ability] %s casts %s!" % [stats.name, ability.ability_name])
 	ability.execute(self, targets)
-	
+
 	# Start cooldown if needed
 	if ability.cooldown > 0:
 		ability_on_cooldown = true
 		get_tree().create_timer(ability.cooldown).timeout.connect(_on_ability_cooldown_finished)
+
+	return true
 
 
 ## Apply damage to this unit (uniform interface for AI/abilities).

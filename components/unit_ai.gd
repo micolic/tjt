@@ -205,7 +205,7 @@ func _perform_attack(target) -> void:
 	var damage: int = unit.stats.get_attack_damage()
 
 	# Apply damage using a common method if available, otherwise fallback to stats
-	if target.has_method("apply_damage"):
+	if UnitUtils.is_unit_node(target):
 		target.apply_damage(damage)
 	else:
 		# Fallback: adjust resource health which will emit signals

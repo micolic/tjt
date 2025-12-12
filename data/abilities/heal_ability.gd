@@ -6,7 +6,7 @@ class_name HealAbility
 @export var heal_amount: float = 30.0
 
 
-func execute(caster: Unit, targets: Array[Unit]) -> void:
+func execute(caster: Unit, targets: Array) -> void:
 	if targets.is_empty():
 		print("[Heal] No valid targets!")
 		return

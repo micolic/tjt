@@ -8,7 +8,7 @@ class_name FireballAbility
 const ProjectileScene = preload("res://scenes/projectile/projectile.tscn")
 
 
-func execute(caster: Unit, targets: Array[Unit]) -> void:
+func execute(caster: Unit, targets: Array) -> void:
 	if targets.is_empty():
 		print("[Fireball] No valid targets!")
 		return
@@ -24,7 +24,7 @@ func execute(caster: Unit, targets: Array[Unit]) -> void:
 	_spawn_projectile(caster, target)
 
 
-func _get_closest_target(caster: Unit, targets: Array[Unit]) -> Unit:
+func _get_closest_target(caster: Unit, targets: Array) -> Node:
 	var closest = targets[0]
 	var closest_dist = caster.global_position.distance_to(closest.global_position)
 	
@@ -37,15 +37,21 @@ func _get_closest_target(caster: Unit, targets: Array[Unit]) -> Unit:
 	return closest
 
 
-func _spawn_projectile(caster: Unit, target: Unit) -> void:
+func _spawn_projectile(caster, target) -> void:
 	if not ProjectileScene:
-		# Fallback to instant damage
-		target.current_health -= damage
-		target.flash_skin(Color.ORANGE_RED)
+		# Fallback to instant damage via interface
+		if target.has_method("apply_damage"):
+			target.apply_damage(damage)
+		elif target.has_property("current_health"):
+			target.current_health = max(target.current_health - damage, 0)
+		elif target.stats:
+			target.stats.health = max(target.stats.health - damage, 0)
+		if target.has_method("flash_skin"):
+			target.flash_skin(Color.ORANGE_RED)
 		return
-	
+
 	var projectile = ProjectileScene.instantiate()
 	caster.get_tree().current_scene.add_child(projectile)
-	
+
 	projectile.global_position = caster.global_position
 	projectile.setup(caster, target, damage, Color.ORANGE_RED)

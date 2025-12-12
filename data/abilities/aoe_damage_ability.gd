@@ -6,7 +6,7 @@ class_name AOEDamageAbility
 @export var damage: float = 25.0
 
 
-func execute(caster: Unit, targets: Array[Unit]) -> void:
+func execute(caster: Unit, targets: Array) -> void:
 	if targets.is_empty():
 		print("[AOE] No valid targets!")
 		return

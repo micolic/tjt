@@ -4,10 +4,11 @@ extends Node
 ## Signals
 signal wave_started(wave_number: int, wave_config: WaveConfig)
 signal wave_completed(wave_number: int)
+signal wave_rewards_earned(gold: int, xp: int)
 signal all_waves_completed
 signal wave_difficulty_changed(difficulty_multiplier: float)
 
-#@warning_ignore("unused_signal")
+@warning_ignore("unused_signal")
 signal wave_timer_updated(time_remaining: float)
 
 ## Wave progression configuration
@@ -20,11 +21,13 @@ signal wave_timer_updated(time_remaining: float)
 var battle_manager: Node
 var unit_spawner: Node
 var enemy_area: Node
+var player_stats: Variant  # Can be Node or Resource
 
 # Set via @onready after inheriting from Arena parent
 @onready var _battle_manager: Node = get_tree().get_first_node_in_group("battle_manager")
 @onready var _unit_spawner: Node = get_parent().get_node("UnitSpawner") if get_parent() else null
 @onready var _enemy_area: Node = get_parent().get_node("EnemyArea") if get_parent() else null
+@onready var _player_stats: Variant = _get_player_stats_node()
 
 ## State
 var current_wave_index: int = -1
@@ -46,6 +49,7 @@ func _ready() -> void:
 	battle_manager = _battle_manager
 	unit_spawner = _unit_spawner
 	enemy_area = _enemy_area
+	player_stats = _player_stats
 	
 	# Fallback - try to get from parent or scene
 	if not battle_manager:
@@ -54,8 +58,13 @@ func _ready() -> void:
 		unit_spawner = get_parent().get_node_or_null("UnitSpawner")
 	if not enemy_area:
 		enemy_area = get_parent().get_node_or_null("EnemyArea")
+	if not player_stats:
+		# Try to find PlayerStats via hierarchy
+		var sell_portal = get_parent().get_node_or_null("SellPortal")
+		if sell_portal and "player_stats" in sell_portal:
+			player_stats = sell_portal.player_stats
 	
-	print("[WAVE] References - BattleManager: %s, UnitSpawner: %s, EnemyArea: %s" % [battle_manager != null, unit_spawner != null, enemy_area != null])
+	print("[WAVE] References - BattleManager: %s, UnitSpawner: %s, EnemyArea: %s, PlayerStats: %s" % [battle_manager != null, unit_spawner != null, enemy_area != null, player_stats != null])
 	print("[WAVE] Loaded %d waves" % waves.size())
 	
 	# Connect battle manager signals
@@ -72,6 +81,40 @@ func _ready() -> void:
 	if not enemy_area:
 		push_error("WaveManager: Could not find EnemyArea!")
 	print("[WAVE] WaveManager._ready() complete!\n")
+
+
+## Helper: Find PlayerStats node with multiple fallback strategies
+func _get_player_stats_node() -> Variant:
+	var parent = get_parent()
+	if not parent:
+		print("[WAVE] Warning: No parent node for WaveManager")
+		return null
+	
+	# Try direct path first
+	var gold_display = parent.get_node_or_null("SellPortal/CanvasLayer/PlayerGoldDisplay")
+	if gold_display and "player_stats" in gold_display:
+		print("[WAVE] Found PlayerStats via SellPortal/CanvasLayer/PlayerGoldDisplay")
+		return gold_display.player_stats
+	
+	# Try alternate path
+	var alt_stats = parent.get_node_or_null("UI/PlayerStats")
+	if alt_stats:
+		print("[WAVE] Found PlayerStats via UI/PlayerStats")
+		return alt_stats
+	
+	# Try searching in tree
+	var candidates = get_tree().get_nodes_in_group("player_stats")
+	if candidates.size() > 0:
+		print("[WAVE] Found PlayerStats in group 'player_stats'")
+		return candidates[0]
+	
+	# Last resort: search Arena children
+	if "player_stats" in parent:
+		print("[WAVE] Found PlayerStats as direct property of parent")
+		return parent.player_stats
+	
+	print("[WAVE] WARNING: Could not find PlayerStats node! Rewards will not be distributed.")
+	return null
 
 
 func _process(_delta: float) -> void:
@@ -132,7 +175,7 @@ func start_next_wave() -> void:
 	await _spawn_wave(wave_config)
 
 
-## Spawns enemy units from wave config
+## Spawns enemy units from wave config with spiral tile distribution
 func _spawn_wave(wave_config: WaveConfig) -> void:
 	if not unit_spawner or not enemy_area or not enemy_area.unit_grid:
 		push_error("Wave Manager: Missing spawner or enemy area")
@@ -141,16 +184,11 @@ func _spawn_wave(wave_config: WaveConfig) -> void:
 	var grid_size: Vector2i = enemy_area.unit_grid.size
 	var center_tile: Vector2i = Vector2i(grid_size.x >> 1, grid_size.y >> 1)
 	
-	# Offsets for spreading enemies around center
-	var offsets: Array[Vector2i] = [
-		Vector2i(0,0), Vector2i(-1,0), Vector2i(1,0), 
-		Vector2i(0,-1), Vector2i(0,1), Vector2i(-1,-1), 
-		Vector2i(1,-1), Vector2i(-1,1), Vector2i(1,1),
-		Vector2i(-2,0), Vector2i(2,0), Vector2i(0,-2), Vector2i(0,2)
-	]
+	# Build list of available tiles in spiral pattern from center
+	var available_tiles: Array[Vector2i] = _get_spiral_tiles(center_tile, grid_size)
 	
 	remaining_enemies = 0
-	var offset_idx: int = 0
+	var tile_idx: int = 0
 	print("[WAVE] Spawning %d enemy groups" % wave_config.enemy_groups.size())
 	
 	# Spawn groups with delay between them
@@ -173,31 +211,33 @@ func _spawn_wave(wave_config: WaveConfig) -> void:
 			var scaled_stats = _create_scaled_stats(enemy_stats)
 			print("[WAVE]     Spawning enemy %d: %s (HP: %d, DMG: %d)" % [i + 1, scaled_stats.name, int(scaled_stats.max_health), int(scaled_stats.attack_damage)])
 			
-			# Find valid placement tile
-			var placed: bool = false
-			for attempt in range(offsets.size()):
-				var try_tile: Vector2i = center_tile + offsets[offset_idx % offsets.size()]
-				offset_idx += 1
-				
-				if _is_valid_tile(try_tile, grid_size) and not enemy_area.unit_grid.is_tile_occupied(try_tile):
-					var spawned_unit = unit_spawner.spawn_unit(scaled_stats, try_tile)
-					if spawned_unit:
-						spawned_enemies.append(spawned_unit)
-					# Connect to stats signal, not unit signal
-					if spawned_unit.has_meta("stats") or spawned_unit.has_node_and_resource("stats"):
-						if "stats" in spawned_unit and spawned_unit.stats and spawned_unit.stats.has_signal("health_reached_zero"):
-							spawned_unit.stats.health_reached_zero.connect(_on_enemy_died.bindv([spawned_unit]))
+			var spawned_unit: Node = null
 			
-			if not placed:
-				# Spawn without specific tile
-				var spawned_unit = unit_spawner.spawn_unit(scaled_stats)
+			# Try to spawn at available tile from spiral
+			if tile_idx < available_tiles.size():
+				var spawn_tile: Vector2i = available_tiles[tile_idx]
+				tile_idx += 1
+				spawned_unit = unit_spawner.spawn_unit(scaled_stats, spawn_tile)
 				if spawned_unit:
-					spawned_enemies.append(spawned_unit)
-					# Connect to stats signal, not unit signal
-					if "stats" in spawned_unit and spawned_unit.stats and spawned_unit.stats.has_signal("health_reached_zero"):
-						spawned_unit.stats.health_reached_zero.connect(_on_enemy_died.bindv([spawned_unit]))
-					remaining_enemies += 1
-					print("[WAVE]       Spawned without specific tile")
+					print("[WAVE]       Spawned at tile %s" % spawn_tile)
+			
+			# Fallback: spawn without specific tile
+			if not spawned_unit:
+				spawned_unit = unit_spawner.spawn_unit(scaled_stats)
+				if spawned_unit:
+					print("[WAVE]       Spawned without specific tile (grid full)")
+			
+			# Register and connect the unit
+			if spawned_unit:
+				spawned_enemies.append(spawned_unit)
+				# Connect to stats signal, not unit signal
+				if "stats" in spawned_unit and spawned_unit.stats and spawned_unit.stats.has_signal("health_reached_zero"):
+					spawned_unit.stats.health_reached_zero.connect(_on_enemy_died.bindv([spawned_unit]))
+				remaining_enemies += 1
+			
+			# Delay between enemies in group
+			if group.spawn_interval_within_group > 0 and i < group.count - 1:
+				await get_tree().create_timer(group.spawn_interval_within_group).timeout
 	
 	# Enable AI for all spawned units
 	print("[WAVE] Total enemies spawned: %d" % remaining_enemies)
@@ -208,6 +248,34 @@ func _spawn_wave(wave_config: WaveConfig) -> void:
 
 func _is_valid_tile(tile: Vector2i, grid_size: Vector2i) -> bool:
 	return tile.x >= 0 and tile.y >= 0 and tile.x < grid_size.x and tile.y < grid_size.y
+
+
+## Generates list of tiles in spiral pattern from center outward
+func _get_spiral_tiles(center: Vector2i, grid_size: Vector2i) -> Array[Vector2i]:
+	var tiles: Array[Vector2i] = []
+	var visited: Array[Vector2i] = []
+	
+	var radius: int = 0
+	var max_radius: int = max(grid_size.x, grid_size.y)
+	
+	while tiles.size() < grid_size.x * grid_size.y and radius <= max_radius:
+		# Check all tiles at this radius
+		for x in range(center.x - radius, center.x + radius + 1):
+			for y in range(center.y - radius, center.y + radius + 1):
+				# Only check edge of current radius (not interior)
+				if radius > 0 and abs(x - center.x) < radius and abs(y - center.y) < radius:
+					continue
+				
+				var tile: Vector2i = Vector2i(x, y)
+				if _is_valid_tile(tile, grid_size) and not (tile in visited):
+					visited.append(tile)
+					# Add if not occupied
+					if not enemy_area.unit_grid.is_tile_occupied(tile):
+						tiles.append(tile)
+		
+		radius += 1
+	
+	return tiles
 
 
 ## Creates a copy of stats with difficulty scaling applied
@@ -233,6 +301,18 @@ func _complete_wave() -> void:
 	print("[WAVE] <<< WAVE %d COMPLETE >>>" % current_wave_number)
 	is_wave_active = false
 	wave_completed.emit(current_wave_number)
+	
+	# Give rewards
+	var wave_config: WaveConfig = waves[current_wave_index] if current_wave_index < waves.size() else null
+	if wave_config and player_stats:
+		var gold_reward = wave_config.gold_reward
+		var xp_reward = wave_config.experience_reward
+		
+		player_stats.gold += gold_reward
+		player_stats.xp += xp_reward
+		
+		print("[WAVE] 💰 REWARDS: +%d Gold, +%d XP" % [gold_reward, xp_reward])
+		wave_rewards_earned.emit(gold_reward, xp_reward)
 	
 	# Clean up any dead units
 	for unit in spawned_enemies:

@@ -48,3 +48,9 @@ theme_override_font_sizes/font_size = 12
 layout_mode = 2
 text = "Next wave in: 15s"
 theme_override_font_sizes/font_size = 12
+
+[node name="RewardsLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = ""
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 0.84, 0, 1)

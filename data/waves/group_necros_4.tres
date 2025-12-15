@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="WaveEnemyGroup" load_steps=1 format=3 uid="uid://c5gkhfl47klqy"]
+
+[ext_resource type="Script" path="res://data/waves/wave_enemy_group.gd" id="1_k8x2j"]
+[ext_resource type="Resource" path="res://data/units/necro_enemy.tres" id="2_necro"]
+
+[resource]
+script = ExtResource("1_k8x2j")
+enemy_type = ExtResource("2_necro")
+count = 4
+spawn_interval_within_group = 0.4

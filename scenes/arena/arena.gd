@@ -13,10 +13,14 @@ const QUARTER_CELL_SIZE := Vector2(8, 8)
 @onready var start_battle_button: Button = $UI/RightPanel/StartBattleButton
 @onready var enemy_area: PlayArea = $EnemyArea
 
-# Configurable enemy wave to spawn when battle starts (list of UnitStats resources)
+# LEGACY: Old enemy wave spawn system - kept for compatibility
+# Now using WaveManager system instead
 @export var enemy_wave := []
 @export_range(1, 3) var enemy_spawn_batch_size: int = 1
-@export var enemy_spawn_interval: float = 0.45  # seconds between batches (slightly slower default)
+@export var enemy_spawn_interval: float = 0.45
+
+# Wave system
+var wave_manager: Node
 
 ## Called when the node enters the scene tree. Connects unit spawner to unit mover.
 func _ready() -> void:
@@ -33,6 +37,11 @@ func _ready() -> void:
 		start_battle_button.pressed.connect(_on_start_battle_pressed)
 		# initial state based on current battle manager state
 		_on_battle_state_changed(battle_manager.current_state)
+	
+	# Get or find wave manager
+	wave_manager = get_node_or_null("WaveManager")
+	if not wave_manager:
+		wave_manager = get_tree().get_first_node_in_group("wave_manager")
 
 
 ## Called when battle starts - disable dragging.
@@ -47,8 +56,14 @@ func _on_battle_started() -> void:
 				enemy_area.unit_grid.remove_unit(tile)
 				if is_instance_valid(u):
 					u.queue_free()
-
-	# Spawn configured enemy wave via UnitSpawner at/around center in batches
+	
+	# If wave manager exists, it handles spawning
+	# Otherwise fall back to legacy enemy_wave system
+	if wave_manager:
+		# Wave manager will start first wave automatically
+		return
+	
+	# LEGACY: Spawn configured enemy wave via UnitSpawner at/around center in batches
 	if enemy_wave and unit_spawner and enemy_area and enemy_area.unit_grid:
 		var grid_size: Vector2i = enemy_area.unit_grid.size
 		var center_tile: Vector2i = Vector2i(grid_size.x >> 1, grid_size.y >> 1)

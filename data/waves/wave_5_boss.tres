@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WaveConfig" load_steps=3 format=3 uid="uid://d2h5p5jx8n8s"]
+
+[ext_resource type="Script" path="res://data/waves/wave_config.gd" id="1_wave"]
+[ext_resource type="Resource" path="res://data/waves/group_necros_4.tres" id="2_group1"]
+[ext_resource type="Resource" path="res://data/waves/group_orcs_4.tres" id="3_group2"]
+
+[resource]
+script = ExtResource("1_wave")
+wave_name = "Wave 5 - BOSS WAVE 👑"
+wave_description = "A terrifying boss wave appears! Multiple powerful enemies!"
+enemy_groups = [ExtResource("2_group1"), ExtResource("3_group2")]
+spawn_interval_between_groups = 2.0
+total_estimated_duration = 45.0
+gold_reward = 300
+experience_reward = 80

@@ -6,7 +6,6 @@
 - [x] Implement ability casting mechanism when mana is full
 - [x] Create base Ability class/resource
 - [x] Create Passive Ability system (stat bonuses)
-- [ ] Add ability button/hotkey triggering (auto-cast only for now)
 - [x] Visual effects for ability activation (projectile system)
 - [x] Cooldown system for abilities
 - [x] Create sample abilities (fireball, heal, AOE damage)

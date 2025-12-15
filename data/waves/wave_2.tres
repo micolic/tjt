@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WaveConfig" load_steps=3 format=3 uid="uid://b87gh3lmj7d5"]
+
+[ext_resource type="Script" path="res://data/waves/wave_config.gd" id="1_wave"]
+[ext_resource type="Resource" path="res://data/waves/group_orcs_4.tres" id="2_group1"]
+[ext_resource type="Resource" path="res://data/waves/group_necros_2.tres" id="3_group2"]
+
+[resource]
+script = ExtResource("1_wave")
+wave_name = "Wave 2 - Reinforcements"
+wave_description = "More orcs and a couple of necromancers join the fight"
+enemy_groups = [ExtResource("2_group1"), ExtResource("3_group2")]
+spawn_interval_between_groups = 1.5
+total_estimated_duration = 20.0
+gold_reward = 80
+experience_reward = 20

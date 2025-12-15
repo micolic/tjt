@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WaveConfig" load_steps=2 format=3 uid="uid://b5p9kdx3jh5s"]
+
+[ext_resource type="Script" path="res://data/waves/wave_config.gd" id="1_wave"]
+[ext_resource type="Resource" path="res://data/waves/group_orcs_3.tres" id="2_group"]
+
+[resource]
+script = ExtResource("1_wave")
+wave_name = "Wave 1 - First Blood"
+wave_description = "An easy first wave with a few orcs to get you started"
+enemy_groups = [ExtResource("2_group")]
+spawn_interval_between_groups = 0.0
+total_estimated_duration = 10.0
+gold_reward = 50
+experience_reward = 10

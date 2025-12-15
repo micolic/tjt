@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=4 uid="uid://v8oorrm8p1jc"]
+[gd_scene load_steps=25 format=4 uid="uid://v8oorrm8p1jc"]
 
 [ext_resource type="TileSet" uid="uid://djkgdgbx8umwd" path="res://scenes/arena/tileset.tres" id="1_1qjuf"]
 [ext_resource type="Script" uid="uid://c10hgjyup6hw" path="res://scenes/arena/arena.gd" id="1_5tue2"]
@@ -15,6 +15,13 @@
 [ext_resource type="Script" uid="uid://lcff67541wbq" path="res://components/battle_manager.gd" id="13_battle"]
 [ext_resource type="Resource" uid="uid://c8g5xn6wnajf" path="res://data/units/orc_enemy.tres" id="14_bjorn_enemy"]
 [ext_resource type="Resource" uid="uid://cvcydg1w6jk2" path="res://data/units/necro_enemy.tres" id="15_mage_enemy"]
+[ext_resource type="Script" uid="uid://de3i018dnetpo" path="res://components/wave_manager.gd" id="16_wave_mgr"]
+[ext_resource type="Resource" uid="uid://b5qakdx3jh5s" path="res://data/waves/wave_1.tres" id="17_w1"]
+[ext_resource type="Script" uid="uid://b6nyk11ct2wbt" path="res://data/waves/wave_config.gd" id="18_gy0qm"]
+[ext_resource type="Resource" path="res://data/waves/wave_2.tres" id="18_w2"]
+[ext_resource type="Resource" path="res://data/waves/wave_3.tres" id="19_w3"]
+[ext_resource type="Resource" path="res://data/waves/wave_5_boss.tres" id="20_w5"]
+[ext_resource type="PackedScene" path="res://scenes/wave_display/wave_display.tscn" id="21_wave_display"]
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_aj7ud"]
 particle_flag_disable_z = true
@@ -70,6 +77,11 @@ alignment = 2
 layout_mode = 2
 focus_mode = 0
 text = "Start Battle"
+
+[node name="WaveDisplay" parent="UI" instance=ExtResource("21_wave_display")]
+layout_mode = 3
+offset_left = 248.0
+offset_right = 448.0
 
 [node name="Visuals" type="Node2D" parent="."]
 metadata/_edit_lock_ = true
@@ -193,6 +205,10 @@ player_stats = ExtResource("12_vmsrg")
 script = ExtResource("13_battle")
 enemy_area = NodePath("../EnemyArea")
 game_area = NodePath("../GameArea")
+
+[node name="WaveManager" type="Node" parent="." groups=["wave_manager"]]
+script = ExtResource("16_wave_mgr")
+waves = Array[ExtResource("18_gy0qm")]([ExtResource("17_w1"), ExtResource("18_w2"), ExtResource("19_w3"), ExtResource("20_w5")])
 
 [node name="NavigationRegion2D" type="NavigationRegion2D" parent="."]
 visible = false

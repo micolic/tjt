@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="WaveEnemyGroup" load_steps=1 format=3 uid="uid://d12nglkc3gm5s"]
+
+[ext_resource type="Script" path="res://data/waves/wave_enemy_group.gd" id="1_k8x2j"]
+[ext_resource type="Resource" path="res://data/units/orc_enemy.tres" id="2_orc"]
+
+[resource]
+script = ExtResource("1_k8x2j")
+enemy_type = ExtResource("2_orc")
+count = 3
+spawn_interval_within_group = 0.3

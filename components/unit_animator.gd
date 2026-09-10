@@ -85,6 +85,17 @@ func is_dead() -> bool:
 	return _is_dead
 
 
+## Overrides the captured base scale (used when the unit's visual scale changes).
+func set_base_scale(new_scale: Vector2) -> void:
+	_base_scale = new_scale
+
+
+## Overrides the captured base offset (used when set_stats changes skin.offset
+## after the animator has already been set up in _ready).
+func set_base_offset(new_offset: Vector2) -> void:
+	_base_offset = new_offset
+
+
 # ── Sprite Frames path (used when real spritesheets are available) ──
 
 func _play_sprite_frames_animation(state: AnimState) -> void:

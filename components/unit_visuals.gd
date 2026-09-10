@@ -130,21 +130,10 @@ static func handle_unit_death(unit: Node) -> void:
 		node = node.get_parent()
 	if node and node is PlayArea:
 		var play_area: PlayArea = node as PlayArea
-		# Find the tile by iterating the grid (unit may have moved from original tile)
+		# Remove the unit from all cells of its footprint (it may have moved during battle)
 		var grid = play_area.unit_grid
-		var found_tile: Vector2i = Vector2i(-1, -1)
-		if grid and "units" in grid:
-			for tile in grid.units:
-				if grid.units[tile] == unit:
-					found_tile = tile
-					break
-		if found_tile.x >= 0:
-			grid.remove_unit(found_tile)
-		else:
-			# Fallback: try position-based lookup
-			var tile = play_area.get_tile_from_global(unit.global_position)
-			if tile.x >= 0:
-				grid.remove_unit(tile)
+		if grid and grid.has_method("remove_unit_node"):
+			grid.remove_unit_node(unit)
 
 	# If this is a player unit (not King), notify unit selection panel to decrement count
 	if unit.is_in_group("player_units") and unit.stats and not unit.stats.is_king:

@@ -46,9 +46,8 @@ func start_preparation() -> void:
 	_change_state(State.PREPARATION)
 	prep_timer = preparation_time
 	preparation_started.emit()
-	
-	# Enable tile highlighters for unit placement
-	_enable_tile_highlighters(true)
+	# Tile highlighters are enabled on demand by Arena placement and UnitMover
+	# drag handlers, not for the whole preparation phase.
 
 
 ## Starts the battle phase.
@@ -100,11 +99,10 @@ func _enable_ai_for_units(enabled: bool) -> void:
 
 
 ## Enables or disables tile highlighters in play areas.
+## Only the game area is highlighted during player placement.
 func _enable_tile_highlighters(enabled: bool) -> void:
 	if game_area and game_area.tile_highlighter:
 		game_area.tile_highlighter.enabled = enabled
-	if enemy_area and enemy_area.tile_highlighter:
-		enemy_area.tile_highlighter.enabled = enabled
 
 
 ## Clears hover highlights on all units without losing persistent selection.

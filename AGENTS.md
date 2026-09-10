@@ -43,6 +43,15 @@ See `Game Design Document.md` for full design spec.
 - `Unit` (player) and `EnemyUnit` (enemy) both extend `Area2D`
 - Shared components: `UnitAI`, `UnitAnimator`, `UnitVisuals`
 - Stats configured via `UnitStats` resource (.tres files)
+- **Placement grid**: logical cells are 8 px (`PlayArea.GRID_CELL_PX`); the visual tilemap stays 32 px.
+  Units occupy a footprint of cells (`UnitStats.footprint`, default 4x4 = 32 px), enabling smaller
+  (2x2 = 16 px) and larger (8x8 = 64 px) units. `UnitGrid` tracks every occupied cell plus a
+  unit→anchor map; use `is_area_free()` / `get_unit_anchor()` / `remove_unit_node()` for placement logic.
+  **Unit origin is the footprint center** — the sprite is centered on the node so the unit is
+  visually centered in its footprint (`PlayArea.get_unit_position()`).
+- **Visual tile size**: `UnitStats.tile_size` (Vector2i in pixels, e.g. 32x32, 16x16). The
+  spritesheet region and preview icons slice at this resolution; placement is centered on the footprint.
+- **Ranges** (attack/aggro) are still measured in 32 px design cells (`CELL_SIZE`), independent of the placement grid.
 - **Damage types**: `UnitStats.DamageType.PHYSICAL`, `MAGICAL`, `PURE`
 - **Armor/MR**: percentage-based reduction (15 armor = 15% less physical damage), capped at 90%
 - **Mana**: per-unit `mana_regen` (no mana per attack)

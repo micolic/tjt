@@ -2,8 +2,6 @@
 class_name EnemyUnit
 extends Area2D
 
-const CELL_SIZE := Vector2(32, 32)
-
 @export var stats: UnitStats : set = set_stats
 
 @onready var skin: Node2D = $Visuals/Skin
@@ -15,6 +13,10 @@ const CELL_SIZE := Vector2(32, 32)
 var _health_flash_id: int = 0
 var _skin_flash_id: int = 0
 var _is_dead: bool = false  ## Guard: prevents multiple death signal emissions
+
+## Returns true if the unit has died and is queued for deletion.
+func is_dead() -> bool:
+	return _is_dead
 
 ## Current health — synced with stats.health for interface compatibility with Unit.
 ## This allows abilities and AI to use `current_health` uniformly on both Unit and EnemyUnit.
@@ -149,14 +151,19 @@ func _on_health_reached_zero() -> void:
 		vfx_spawner.spawn_vfx_on_unit("death_effect", self)
 	if animator and not animator.is_dead():
 		animator.play(UnitAnimator.AnimState.DEATH)
-		animator.death_animation_finished.connect(func(): UnitVisuals.handle_unit_death(self), CONNECT_ONE_SHOT)
+		animator.death_animation_finished.connect(
+			func(): UnitVisuals.handle_unit_death(self), CONNECT_ONE_SHOT
+		)
 	else:
 		UnitVisuals.handle_unit_death(self)
 
 
 ## Apply damage to this enemy unit (uniform interface for AI/abilities).
 ## damage_type controls armor/MR reduction (default PHYSICAL for auto-attacks).
-func apply_damage(damage: int, damage_type: UnitStats.DamageType = UnitStats.DamageType.PHYSICAL) -> void:
+func apply_damage(
+	damage: int,
+	damage_type: UnitStats.DamageType = UnitStats.DamageType.PHYSICAL
+) -> void:
 	if not stats:
 		return
 	var reduced: float = UnitStats.calculate_reduced_damage(
@@ -196,17 +203,57 @@ func set_stats(value: UnitStats) -> void:
 	else:
 		# Set the correct spritesheet based on team
 		skin.texture = value.TEAM_SPRITESHEET[value.team]
-		skin.region_rect.position = Vector2(stats.skin_coordinates) * CELL_SIZE
+		skin.region_rect = Rect2(
+			Vector2(stats.skin_coordinates) * Vector2(value.tile_size),
+			Vector2(value.tile_size)
+		)
+		# The unit's origin is the footprint center. Raise the sprite by half the
+		# tile height so the unit's base sits near the tile center and it does not
+		# look like it is lying on the bottom edge of the highlighted tile.
+		if skin is Sprite2D:
+			var y_off: float = -float(value.tile_size.y) / 2.0
+			skin.offset = Vector2(0, y_off)
+			# Animator captures _base_offset in _ready before set_stats runs, then
+			# overrides skin.offset.y every frame. Sync it so the offset persists.
+			if animator:
+				animator.set_base_offset(skin.offset)
 
 	# Apply visual scale (e.g. larger enemies)
 	if value.visual_scale != 1.0:
 		$Visuals.scale = Vector2(value.visual_scale, value.visual_scale)
 		if animator:
-			animator._base_scale = $Visuals.scale
+			animator.set_base_scale($Visuals.scale)
+
+	# Position HP/Mana bars above the (visually scaled) sprite, centered on the unit.
+	_update_bar_positions()
 
 	# Connect stats signals if not in editor
 	if not Engine.is_editor_hint():
 		_connect_stats_signals()
+
+
+## Repositions HP and Mana bars so they sit just above the sprite.
+## The sprite is raised by skin.offset.y (in Visuals-local space); since Visuals
+## is scaled by visual_scale, the raise in the unit's local space is
+## skin.offset.y * visual_scale. The bars follow the raised sprite.
+func _update_bar_positions() -> void:
+	if not stats or not health_bar or not mana_bar:
+		return
+	var scaled_size: Vector2 = Vector2(stats.tile_size) * stats.visual_scale
+	var half_size: Vector2 = scaled_size * 0.5
+	# Match the sprite raise so bars sit above the raised sprite, not the tile.
+	var skin_raise: float = (skin.offset.y if skin is Sprite2D else 0.0) * stats.visual_scale
+	var top: float = -half_size.y + skin_raise
+	var h_bar: ProgressBar = health_bar
+	var m_bar: ProgressBar = mana_bar
+	h_bar.offset_left = -half_size.x + 1.0
+	h_bar.offset_right = half_size.x - 1.0
+	h_bar.offset_top = top - 12.0
+	h_bar.offset_bottom = top - 6.0
+	m_bar.offset_left = -half_size.x + 1.0
+	m_bar.offset_right = half_size.x - 1.0
+	m_bar.offset_top = top - 5.0
+	m_bar.offset_bottom = top - 1.0
 
 
 ## Swaps the static Sprite2D skin for an AnimatedSprite2D using the stats' sprite_frames.

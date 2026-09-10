@@ -17,6 +17,9 @@ const DRAG_THRESHOLD: float = 8.0
 var starting_position: Vector2
 var offset: Vector2 = Vector2.ZERO
 var dragging: bool = false
+## Optional callback that maps a global mouse position to the target's snapped
+## global position. When set, _process uses it instead of raw mouse + offset.
+var snap_position: Callable = Callable()
 var _press_position: Vector2 = Vector2.ZERO
 var _pending_drag: bool = false
 
@@ -28,9 +31,17 @@ func _ready() -> void:
 
 
 ## Updates the target's position to follow the mouse while dragging.
+## If a snap_position callback is set, the target is snapped to the grid tile
+## under the cursor instead of using the raw grab offset.
 func _process(_delta: float) -> void:
 	if dragging and is_instance_valid(target):
-		target.global_position = target.get_global_mouse_position() + offset
+		var mouse_pos: Vector2 = target.get_global_mouse_position()
+		if not snap_position.is_null():
+			var snap_pos: Vector2 = snap_position.call(mouse_pos)
+			target.global_position = snap_pos
+			offset = snap_pos - mouse_pos
+		else:
+			target.global_position = mouse_pos + offset
 
 
 ## Handles input for canceling or dropping the drag operation.

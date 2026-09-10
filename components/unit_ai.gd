@@ -14,7 +14,6 @@ const DEBUG_AI_VERBOSE: bool = false
 const DEBUG_TARGETING: bool = false
 
 const CELL_SIZE := Vector2(32, 32)
-const HALF_CELL_SIZE := Vector2(16, 16)
 
 @export var enabled: bool = false
 @export var update_interval: float = 0.5  ## How often AI updates (performance)
@@ -643,7 +642,7 @@ func _move_along_path(delta: float) -> void:
 		return
 	
 	var target_tile := path[current_path_index]
-	var target_pos := play_area.get_global_from_tile(target_tile) - HALF_CELL_SIZE
+	var target_pos := play_area.get_global_from_tile(target_tile)
 	
 	var direction: Vector2 = (target_pos - unit.global_position).normalized()
 	var move_distance: float = movement_speed * delta

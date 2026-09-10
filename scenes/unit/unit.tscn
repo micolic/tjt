@@ -44,20 +44,20 @@ material = ExtResource("3_3po7s")
 
 [node name="Skin" type="Sprite2D" parent="Visuals"]
 texture = ExtResource("1_fmv3f")
-offset = Vector2(16, 8)
+offset = Vector2(0, 0)
 region_enabled = true
 region_rect = Rect2(32, 96, 32, 32)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 visible = false
-position = Vector2(16, 8)
+position = Vector2(0, 0)
 shape = SubResource("RectangleShape2D_fmv3f")
 
 [node name="HealthBar" type="ProgressBar" parent="."]
-offset_left = 1.0
-offset_top = -20.0
-offset_right = 31.0
-offset_bottom = -14.0
+offset_left = -15.0
+offset_top = -28.0
+offset_right = 15.0
+offset_bottom = -22.0
 theme_override_styles/background = SubResource("StyleBoxFlat_fmv3f")
 theme_override_styles/fill = SubResource("StyleBoxFlat_fvc8g")
 value = 42.0
@@ -65,10 +65,10 @@ show_percentage = false
 mouse_filter = 2
 
 [node name="ManaBar" type="ProgressBar" parent="."]
-offset_left = 1.0
-offset_top = -15.0
-offset_right = 31.0
-offset_bottom = -11.0
+offset_left = -15.0
+offset_top = -21.0
+offset_right = 15.0
+offset_bottom = -17.0
 theme_override_styles/background = SubResource("StyleBoxFlat_vh40f")
 theme_override_styles/fill = SubResource("StyleBoxFlat_bhlit")
 value = 13.0

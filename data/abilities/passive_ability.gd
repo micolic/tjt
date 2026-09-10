@@ -200,7 +200,7 @@ func _get_other_enemies_near(unit: Node, primary: Node, max_distance: float, max
 	for enemy in unit.get_tree().get_nodes_in_group(group_name):
 		if enemy == primary or not is_instance_valid(enemy) or not enemy.has_method("apply_damage"):
 			continue
-		if "_is_dead" in enemy and enemy._is_dead:
+		if enemy.has_method("is_dead") and enemy.is_dead():
 			continue
 		if "current_health" in enemy and enemy.current_health <= 0.0:
 			continue

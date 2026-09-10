@@ -1,0 +1,31 @@
+20: 107
+Traceback (most recent call last):
+@onready var game_area: PlayArea = $GameArea                                                               
+---
+172: 108
+	if unit.stats.team != UnitStats.Team.PLAYER or unit.current_health <= 0.0 or unit.is_queued_for_deletion():
+---
+215: 121
+	return not _is_match_over and battle_manager != null and battle_manager.current_state == BattleManager.State.PREPARATION
+---
+231: 113
+	if not is_instance_valid(unit) or unit != _selected_unit or not _can_modify_units() or _placement_stats != null:
+---
+239: 113
+	if not is_instance_valid(unit) or unit != _selected_unit or not _can_modify_units() or _placement_stats != null:
+---
+387: 119
+			start_battle_button.text = "Next Wave" if wave_manager and wave_manager.is_waiting_for_next_wave else "Start Battle"
+---
+469: 104
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_SPACE:
+---
+618: 113
+  File "<string>", line 8, in <module>
+  File "C:\Users\User\AppData\Local\Programs\Python\Python311\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2192' in position 49: character maps to <undefined>
+	if not is_instance_valid(unit) or not unit.stats or unit.current_health <= 0.0 or unit.is_queued_for_deletion():
+---
+668: 129

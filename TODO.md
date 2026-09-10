@@ -427,6 +427,18 @@
 
 ## Session Log
 
+### September 2026 (Session 11) — Fine-Grained Placement Grid + Tile-Size Units
+- ✅ Logical placement grid reduced 32 px → 8 px cells (`PlayArea.GRID_CELL_PX`); visual tilemap unchanged
+- ✅ `UnitStats.footprint` (Vector2i, default 4x4 = 32 px) — future support for smaller (2x2) and larger (8x8+) units
+- ✅ `UnitStats.tile_size` (Vector2i in pixels, default 32x32) — spritesheet slicing and placement use this size
+- ✅ Unit origin is the **footprint center**; Sprite2D/collision are centered so the unit is visually centered in the tile
+- ✅ `UnitGrid` rework: multi-cell occupancy, `unit_anchors` map, `is_area_free`, `get_units_in_area`, `remove_unit_node`, `clear`
+- ✅ Footprint-aware placement ghost, click-to-place, drag & drop (incl. swap when footprints fit), quick sell, upgrades
+- ✅ Drop anchor computed from the unit's dragged position (lands where the player sees it)
+- ✅ Grid sizes ×4: GameArea 120×48, EnemyArea 120×16 logical cells
+- ✅ TileHighlighter converts logical (8 px) tiles to visual (32 px) tiles
+- ✅ All 665 arena test checks pass
+
 ### September 2026 (Session 10) — Tier Rework & Legion TD Ability Catalog
 - ✅ `UnitStats.tier` range 1-7 (`MAX_TIER`), all allies assigned tier / cost / rarity by Legion TD logic
 - ✅ `PassiveAbility` combat framework: `modify_outgoing_damage`, `on_attack_hit`, `on_health_changed` hooks

@@ -53,8 +53,15 @@ const MAX_TIER := 7
 
 @export_category("Visuals")
 @export var skin_coordinates: Vector2i
+## Size of the unit's visual sprite in pixels (e.g. 32x32, 16x16, 64x64).
+## Used to center the unit on its placement tile and to slice the spritesheet correctly.
+@export var tile_size: Vector2i = Vector2i(32, 32)
 ## Visual scale multiplier (e.g. 1.5 for King). Applied to the Visuals node.
 @export var visual_scale: float = 1.0
+## Placement footprint in logical grid cells (8 px each). Default 4x4 = 32 px — the
+## standard unit size. Smaller units (e.g. 2x2 = 16 px) and larger ones (8x8 = 64 px)
+## occupy proportionally fewer/more cells on the placement grid.
+@export var footprint: Vector2i = Vector2i(4, 4)
 ## Optional SpriteFrames for animated units (idle, move, attack).
 ## When set, the unit will use AnimatedSprite2D instead of the static spritesheet.
 @export var sprite_frames: SpriteFrames

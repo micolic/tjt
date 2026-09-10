@@ -37,10 +37,11 @@ func spawn_unit(unit: UnitStats, tile: Vector2i = Vector2i(-1, -1)) -> Node:
 		assert(not enemy_area.unit_grid.is_grid_full(), "Enemy area is full!")
 	
 	var new_unit: Node = unit_scene.instantiate()
-	# Determine tile to spawn in: use provided tile if valid, otherwise first available
+	# Determine anchor to spawn at: use provided anchor if the footprint fits, otherwise first available
+	var footprint: Vector2i = unit.footprint if "footprint" in unit else UnitGrid.DEFAULT_FOOTPRINT
 	var spawn_tile: Vector2i = tile
-	if spawn_tile == Vector2i(-1, -1) or not area.is_tile_within_bounds(spawn_tile) or area.unit_grid.is_tile_occupied(spawn_tile):
-		spawn_tile = area.unit_grid.get_first_available_tile()
+	if spawn_tile == Vector2i(-1, -1) or not area.unit_grid.is_area_free(spawn_tile, footprint):
+		spawn_tile = area.unit_grid.get_first_available_tile(footprint)
 
 	# Duplicate the UnitStats resource so each spawned unit has its own independent stats instance.
 	# MUST happen BEFORE add_child() so _ready() sees the correct stats (not the .tscn default).
@@ -53,7 +54,7 @@ func spawn_unit(unit: UnitStats, tile: Vector2i = Vector2i(-1, -1)) -> Node:
 	area.unit_grid.add_unit(spawn_tile, new_unit)
 	# Parent to the unit_grid so movement logic/reparenting stays consistent
 	area.unit_grid.add_child(new_unit)
-	new_unit.global_position = area.get_global_from_tile(spawn_tile) - Arena.HALF_CELL_SIZE
+	new_unit.global_position = area.get_unit_position(spawn_tile, footprint)
 
 	# Normalize transform to avoid skew/rotation inherited from templates or scripts
 	new_unit.rotation = 0
@@ -64,6 +65,11 @@ func spawn_unit(unit: UnitStats, tile: Vector2i = Vector2i(-1, -1)) -> Node:
 			v.set_enabled(false)
 		elif v:
 			v.enabled = false
+
+	var skin_offset: Vector2 = new_unit.skin.offset if new_unit.skin is Sprite2D else Vector2.ZERO
+	print("[UnitSpawner] Spawned %s at anchor %s global_pos=%s skin.offset=%s" % [
+		new_unit.stats.name, spawn_tile, new_unit.global_position, skin_offset
+	])
 
 	unit_spawned.emit(new_unit)
 	return new_unit

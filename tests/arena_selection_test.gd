@@ -8,8 +8,9 @@ const SLAYER: UnitStats = preload("res://data/units/slayer_ally.tres")
 const VIEWPORT_SIZE: Vector2i = Vector2i(960, 540)
 const UPGRADE_NAMES: Array[String] = ["Bloodfang", "Ravager"]
 const UPGRADE_COSTS: Array[int] = [1, 3]
-const FIRST_TILE: Vector2i = Vector2i(6, 4)
-const SECOND_TILE: Vector2i = Vector2i(8, 4)
+## Anchors on the 8 px logical grid (4 cells = one old 32 px tile).
+const FIRST_TILE: Vector2i = Vector2i(24, 16)
+const SECOND_TILE: Vector2i = Vector2i(32, 16)
 
 class FailingSpawner:
 	extends UnitSpawner
@@ -320,7 +321,7 @@ func _click_at(position: Vector2) -> void:
 
 func _test_viewport_clicks() -> void:
 	var unit: Unit = _spawn(GRUNT, FIRST_TILE)
-	var covered: Unit = _spawn(GRUNT, Vector2i(2, 10))
+	var covered: Unit = _spawn(GRUNT, Vector2i(8, 40))
 	if unit == null or covered == null:
 		return
 	var position: Vector2 = _screen_position(unit.global_position + Vector2(16.0, 8.0))
@@ -372,8 +373,8 @@ func _test_drag_threshold_and_restoration() -> void:
 	_check(not drag.dragging and drag._pending_drag and _unit_at(FIRST_TILE) == unit, "Seven pixels do not start a drag")
 	_move_pointer(press + Vector2(8.0, 0.0))
 	_check(drag.dragging and unit.is_in_group("dragging") and _unit_at(FIRST_TILE) == null, "Eight pixels start a drag and release the grid tile")
-	var destination: Vector2 = _arena.game_area.get_global_from_tile(SECOND_TILE) - Arena.HALF_CELL_SIZE
-	var destination_mouse: Vector2 = _screen_position(destination + Vector2(16.0, 8.0))
+	var destination: Vector2 = _arena.game_area.get_unit_position(SECOND_TILE, unit.stats.footprint)
+	var destination_mouse: Vector2 = _screen_position(destination)
 	_move_pointer(destination_mouse)
 	drag._process(0.0)
 	_check(unit.global_position.is_equal_approx(destination), "Active drag follows the pointer")
@@ -449,12 +450,12 @@ func _test_upgrade_guards_and_king() -> void:
 
 
 func _test_upgrade_branches_and_synergy() -> void:
-	var sentinel: Unit = _spawn(SENTINEL, Vector2i(10, 4))
-	var slayer: Unit = _spawn(SLAYER, Vector2i(12, 4))
+	var sentinel: Unit = _spawn(SENTINEL, Vector2i(40, 16))
+	var slayer: Unit = _spawn(SLAYER, Vector2i(48, 16))
 	if sentinel == null or slayer == null:
 		return
 	for index: int in range(UPGRADE_NAMES.size()):
-		var tile: Vector2i = FIRST_TILE + Vector2i(index, 0)
+		var tile: Vector2i = FIRST_TILE + Vector2i(index * 4, 0)
 		var original: Unit = _spawn(GRUNT, tile)
 		if original == null:
 			continue
@@ -631,12 +632,12 @@ func _test_bloodrage_thresholds() -> void:
 	var bonuses: Array[float] = [0.2, 0.2, 0.3]
 	var fractions: Array[float] = [1.0, 0.6, 0.599, 0.4, 0.399, 0.2, 0.199, 0.1, 0.21, 0.41, 0.61, 1.0]
 	var stacks: Array[int] = [0, 0, 1, 1, 2, 2, 3, 3, 2, 1, 0, 0]
-	var untouched: Unit = _spawn(GRUNT.upgrades[0], Vector2i(14, 4))
+	var untouched: Unit = _spawn(GRUNT.upgrades[0], Vector2i(56, 16))
 	if untouched == null:
 		return
 	for index: int in range(templates.size()):
 		var template: UnitStats = templates[index]
-		var unit: Unit = _spawn(template, FIRST_TILE + Vector2i(index * 2, 0))
+		var unit: Unit = _spawn(template, FIRST_TILE + Vector2i(index * 8, 0))
 		if unit == null:
 			continue
 		_select(unit)
@@ -663,13 +664,13 @@ func _test_bloodrage_thresholds() -> void:
 func _test_bloodrage_attack_timing() -> void:
 	var enemy_stats: UnitStats = load("res://data/units/orc_enemy.tres").duplicate(true) as UnitStats
 	enemy_stats.max_health = 10000
-	var enemy: EnemyUnit = _arena.unit_spawner.spawn_unit(enemy_stats, Vector2i(10, 1)) as EnemyUnit
+	var enemy: EnemyUnit = _arena.unit_spawner.spawn_unit(enemy_stats, Vector2i(40, 4)) as EnemyUnit
 	if not _check(is_instance_valid(enemy), "Spawned a real target for Bloodrage combat checks"):
 		return
 	for index: int in range(GRUNT.upgrades.size()):
 		var template: UnitStats = GRUNT.upgrades[index]
 		var bonus: float = 0.2 if index == 0 else 0.3
-		var unit: Unit = _spawn(template, FIRST_TILE + Vector2i(index * 2, 0))
+		var unit: Unit = _spawn(template, FIRST_TILE + Vector2i(index * 8, 0))
 		if unit == null:
 			continue
 		var ai: UnitAI = unit.get_node("UnitAI") as UnitAI

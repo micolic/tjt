@@ -1,10 +1,6 @@
 class_name Arena
 extends Node2D
 
-const CELL_SIZE := Vector2(32, 32)
-const HALF_CELL_SIZE := Vector2(16, 16)
-const QUARTER_CELL_SIZE := Vector2(8, 8)
-
 const VICTORY_SCENE := "res://scenes/menu/victory_screen.tscn"
 const GAME_OVER_SCENE := "res://scenes/menu/game_over_screen.tscn"
 const END_SCREEN_DELAY := 1.5  ## Seconds before transitioning to end screen
@@ -30,11 +26,12 @@ var quit_game_button: Button
 var wave_manager: Node
 
 # Placement mode state
-var _placement_stats: UnitStats = null  ## The unit type being placed (null = not in placement mode)
+var _placement_stats: UnitStats = null  ## The unit type being placed (null = not placement mode)
 var _placement_ghost: Sprite2D = null  ## Ghost sprite following the cursor
 var _drag_placing: bool = false  ## True when placing via card drag (release to place)
 var _selected_unit: Unit = null
 var _is_match_over: bool = false
+var _last_ghost_anchor: Vector2i = Vector2i(-1, -1)
 
 # Camera zoom
 const ZOOM_MIN := 0.5
@@ -141,12 +138,13 @@ func _spawn_king() -> void:
 	if not king_stats:
 		push_warning("[Arena] Could not load king_ally.tres!")
 		return
-	# Place at bottom-center of the game area
+	# Place at bottom-center of the game area (anchor of the King's footprint)
 	var grid_size: Vector2i = game_area.unit_grid.size
-	var king_tile := Vector2i(grid_size.x >> 1, grid_size.y - 1)
-	# Find a free tile near bottom-center
-	if game_area.unit_grid.is_tile_occupied(king_tile):
-		king_tile = game_area.unit_grid.get_first_available_tile()
+	var king_footprint: Vector2i = king_stats.footprint
+	var king_tile := Vector2i((grid_size.x - king_footprint.x) >> 1, grid_size.y - king_footprint.y)
+	# Find a free spot near bottom-center
+	if not game_area.unit_grid.is_area_free(king_tile, king_footprint):
+		king_tile = game_area.unit_grid.get_first_available_tile(king_footprint)
 	var king_node := unit_spawner.spawn_unit(king_stats, king_tile)
 	if king_node:
 
@@ -205,7 +203,10 @@ func _on_selected_unit_tree_exiting() -> void:
 
 func _refresh_selected_unit_panel() -> void:
 	if _selected_unit != null:
-		if not is_instance_valid(_selected_unit) or not _selected_unit.is_inside_tree() or _selected_unit.current_health <= 0.0:
+		var invalid: bool = not is_instance_valid(_selected_unit)
+		invalid = invalid or not _selected_unit.is_inside_tree()
+		invalid = invalid or _selected_unit.current_health <= 0.0
+		if invalid:
 			_clear_unit_selection()
 	selected_unit_panel.set_upgrades_enabled(_can_modify_units() and _placement_stats == null)
 	selected_unit_panel.refresh()
@@ -230,20 +231,18 @@ func _cancel_unit_drags() -> void:
 func _on_upgrade_requested(unit: Unit, target: UnitStats) -> void:
 	if not is_instance_valid(unit) or unit != _selected_unit or not _can_modify_units() or _placement_stats != null:
 		return
-	for tile: Vector2i in game_area.unit_grid.units:
-		if game_area.unit_grid.units[tile] == unit:
-			_upgrade_placed_unit(tile, target)
-			return
+	var anchor: Vector2i = game_area.unit_grid.get_unit_anchor(unit)
+	if anchor != Vector2i(-1, -1):
+		_upgrade_placed_unit(anchor, target)
 
 
 func _on_unit_removal_requested(unit: Unit) -> void:
 	if not is_instance_valid(unit) or unit != _selected_unit or not _can_modify_units() or _placement_stats != null:
 		return
-	for tile: Vector2i in game_area.unit_grid.units:
-		if game_area.unit_grid.units[tile] == unit:
-			print("[Arena] Removing %s at tile %s" % [unit.stats.name, tile])
-			_remove_placed_unit(tile)
-			return
+	var anchor: Vector2i = game_area.unit_grid.get_unit_anchor(unit)
+	if anchor != Vector2i(-1, -1):
+		print("[Arena] Removing %s at anchor %s" % [unit.stats.name, anchor])
+		_remove_placed_unit(anchor)
 
 
 ## Called when battle starts - disable dragging.
@@ -263,12 +262,10 @@ func _on_battle_started() -> void:
 
 	# Clear any pre-existing enemy units in the enemy area (safety)
 	if enemy_area and enemy_area.unit_grid:
-		for tile in enemy_area.unit_grid.units.keys():
-			var u = enemy_area.unit_grid.units[tile]
-			if u:
-				enemy_area.unit_grid.remove_unit(tile)
-				if is_instance_valid(u):
-					u.queue_free()
+		for u in enemy_area.unit_grid.get_all_units():
+			enemy_area.unit_grid.remove_unit_node(u)
+			if is_instance_valid(u):
+				u.queue_free()
 	
 	# Wave manager handles spawning
 	if wave_manager:
@@ -441,6 +438,12 @@ func _on_panel_unit_selected(unit_stats: UnitStats) -> void:
 	if start_battle_button:
 		start_battle_button.disabled = true
 	_refresh_selected_unit_panel()
+	# Match highlighter to the selected unit's footprint
+	if game_area and game_area.tile_highlighter:
+		game_area.tile_highlighter.footprint = unit_stats.footprint
+		game_area.tile_highlighter.tracking_target = null
+		game_area.tile_highlighter.reset_tracking()
+		game_area.tile_highlighter.enabled = true
 	# Create ghost sprite that follows the cursor
 	_create_placement_ghost(unit_stats)
 
@@ -460,6 +463,12 @@ func _on_panel_unit_drag_started(unit_stats: UnitStats) -> void:
 	if start_battle_button:
 		start_battle_button.disabled = true
 	_refresh_selected_unit_panel()
+	# Match highlighter to the selected unit's footprint
+	if game_area and game_area.tile_highlighter:
+		game_area.tile_highlighter.footprint = unit_stats.footprint
+		game_area.tile_highlighter.tracking_target = null
+		game_area.tile_highlighter.reset_tracking()
+		game_area.tile_highlighter.enabled = true
 	_create_placement_ghost(unit_stats)
 
 
@@ -522,7 +531,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _can_modify_units() and game_area:
 			var tile := game_area.get_hovered_tile()
 			if game_area.is_tile_within_bounds(tile) and game_area.unit_grid.is_tile_occupied(tile):
-				_remove_placed_unit(tile)
+				var hovered_unit: Node = game_area.unit_grid.get_unit_at(tile)
+				_remove_placed_unit(game_area.unit_grid.get_unit_anchor(hovered_unit))
 				get_viewport().set_input_as_handled()
 				return
 
@@ -549,29 +559,34 @@ func _unhandled_input(event: InputEvent) -> void:
 				if unit_selection_panel:
 					unit_selection_panel.cancel_selection()
 			return
-		var tile := game_area.get_hovered_tile()
-		if not game_area.is_tile_within_bounds(tile):
-			print("[Arena] Placement failed: tile %s is out of bounds" % tile)
+		var footprint: Vector2i = _placement_stats.footprint
+		var hovered := game_area.get_hovered_tile()
+		if not game_area.is_tile_within_bounds(hovered):
+			print("[Arena] Placement failed: tile %s is out of bounds" % hovered)
 			if _drag_placing:
 				_exit_placement_mode()
 				if unit_selection_panel:
 					unit_selection_panel.cancel_selection()
 			return
-		if game_area.unit_grid.is_tile_occupied(tile):
-			print("[Arena] Placement failed: tile %s is occupied" % tile)
+		var mouse_pos := game_area.get_global_mouse_position()
+		var tile := game_area.get_anchor_for_global(mouse_pos, footprint)
+		if not game_area.unit_grid.is_area_free(tile, footprint):
+			print("[Arena] Placement failed: area at %s (%s) is occupied" % [tile, footprint])
 			if _drag_placing:
 				_exit_placement_mode()
 				if unit_selection_panel:
 					unit_selection_panel.cancel_selection()
 			return
 
-		# Spawn the unit at the chosen tile
-		print("[Arena] Placing %s at tile %s" % [_placement_stats.name, tile])
+		# Spawn the unit at the chosen anchor
+		print("[Arena] Placing %s at anchor %s" % [_placement_stats.name, tile])
 		var spawned := unit_spawner.spawn_unit(_placement_stats, tile)
 		if not spawned:
 			print("[Arena] Placement failed: spawn_unit returned null")
 			return
-		print("[Arena] Placed %s at tile %s" % [_placement_stats.name, tile])
+		print("[Arena] Placed %s at anchor %s global_pos=%s" % [
+		_placement_stats.name, tile, spawned.global_position
+	])
 		if unit_selection_panel:
 			unit_selection_panel.on_unit_placed(_placement_stats)
 		# Shift held → stay in placement mode for multi-place
@@ -595,10 +610,17 @@ func _exit_placement_mode() -> void:
 	print("[Arena] Exiting placement mode")
 	_placement_stats = null
 	_drag_placing = false
+	_last_ghost_anchor = Vector2i(-1, -1)
 	# Remove ghost sprite
 	if _placement_ghost and is_instance_valid(_placement_ghost):
 		_placement_ghost.queue_free()
 		_placement_ghost = null
+	# Reset highlighter footprint to the default 4x4 tile
+	if game_area and game_area.tile_highlighter:
+		game_area.tile_highlighter.footprint = Vector2i(4, 4)
+		game_area.tile_highlighter.tracking_target = null
+		game_area.tile_highlighter.reset_tracking()
+		game_area.tile_highlighter.enabled = false
 	# Show panel again
 	_set_deck_panel_visible(true)
 	var can_interact: bool = _can_modify_units()
@@ -711,9 +733,12 @@ func _create_placement_ghost(unit_stats: UnitStats) -> void:
 		return
 	_placement_ghost.region_enabled = true
 	_placement_ghost.region_rect = Rect2(
-		Vector2(unit_stats.skin_coordinates) * CELL_SIZE,
-		CELL_SIZE
+		Vector2(unit_stats.skin_coordinates) * Vector2(unit_stats.tile_size),
+		Vector2(unit_stats.tile_size)
 	)
+	# Match the in-game sprite: raise by half the tile height so the unit's base
+	# sits near the tile center instead of being centered in the highlight box.
+	_placement_ghost.offset = Vector2(0, -float(unit_stats.tile_size.y) / 2.0)
 	_placement_ghost.modulate = Color(1, 1, 1, 0.6)
 	_placement_ghost.z_index = 100
 	add_child(_placement_ghost)
@@ -729,14 +754,22 @@ func _process(delta: float) -> void:
 		_stats_update_timer = STATS_UPDATE_INTERVAL
 		_refresh_selected_unit_panel()
 
-	# Move placement ghost to snap to hovered tile
-	if _placement_ghost and is_instance_valid(_placement_ghost) and game_area:
+	# Move placement ghost to snap to the hovered footprint anchor
+	if _placement_ghost and is_instance_valid(_placement_ghost) and game_area and _placement_stats:
 		var tile := game_area.get_hovered_tile()
 		if game_area.is_tile_within_bounds(tile):
+			var footprint: Vector2i = _placement_stats.footprint
+			var mouse_pos := game_area.get_global_mouse_position()
+			var anchor := game_area.get_anchor_for_global(mouse_pos, footprint)
+			if anchor != _last_ghost_anchor:
+				_last_ghost_anchor = anchor
+				print("[Arena] placement: mouse=%s footprint=%s anchor=%s ghost_pos=%s" % [
+					mouse_pos, footprint, anchor, game_area.get_unit_position(anchor, footprint)
+				])
 			_placement_ghost.visible = true
-			_placement_ghost.global_position = game_area.get_global_from_tile(tile) - HALF_CELL_SIZE
+			_placement_ghost.global_position = game_area.get_unit_position(anchor, footprint)
 			# Tint green if free, red if occupied
-			if game_area.unit_grid.is_tile_occupied(tile):
+			if not game_area.unit_grid.is_area_free(anchor, footprint):
 				_placement_ghost.modulate = Color(1.0, 0.3, 0.3, 0.5)
 			else:
 				_placement_ghost.modulate = Color(0.3, 1.0, 0.5, 0.6)
@@ -749,4 +782,5 @@ func _set_drag_enabled(enabled: bool) -> void:
 	var all_units := get_tree().get_nodes_in_group("units")
 	for unit in all_units:
 		if unit is Unit:
-			unit.drag_and_drop.enabled = enabled and unit.current_health > 0.0 and not unit._is_dead
+			var can_drag: bool = enabled and unit.current_health > 0.0 and not unit.is_dead()
+			unit.drag_and_drop.enabled = can_drag

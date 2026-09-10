@@ -89,7 +89,9 @@ func refresh() -> void:
 		_portrait.texture = _get_portrait(stats)
 	_name_label.text = stats.name
 	_identity_label.text = "Tier %d | %s" % [stats.tier, _faction_name(stats.faction)]
-	_name_label.tooltip_text = "%s\n%s\nTotal value: %d gold" % [stats.name, _identity_label.text, stats.gold_cost]
+	_name_label.tooltip_text = "%s\n%s\nTotal value: %d gold" % [
+		stats.name, _identity_label.text, stats.gold_cost
+	]
 	_identity_label.tooltip_text = _name_label.tooltip_text
 	_set_ability(_active_name, _active_description, "Active",
 		stats.ability_resource.ability_name if stats.ability_resource else "None",
@@ -109,14 +111,23 @@ func _refresh_live_values() -> void:
 		set_unit(null)
 		return
 	var stats: UnitStats = unit.stats
-	_health_label.text = "HP %d / %d" % [ceili(maxf(unit.current_health, 0.0)), stats.get_max_health()]
+	_health_label.text = "HP %d / %d" % [
+		ceili(maxf(unit.current_health, 0.0)), stats.get_max_health()
+	]
 	_mana_label.text = "Mana %d / %d" % [floori(maxf(unit.current_mana, 0.0)), stats.max_mana]
-	_health_label.tooltip_text = "Health: %.1f / %d\nRegeneration: %.2f HP/s" % [maxf(unit.current_health, 0.0), stats.get_max_health(), stats.health_regen]
-	_mana_label.tooltip_text = "Mana: %.1f / %d\nRegeneration: %.2f mana/s" % [maxf(unit.current_mana, 0.0), stats.max_mana, stats.mana_regen]
-	_combat_label.text = "ATK %d  |  AS %.2f\nArmor %d%%  |  MR %d%%\nRange %d  |  AP %d" % [stats.get_attack_damage(), stats.attack_speed, stats.armor, stats.magic_resist, stats.attack_range, stats.ability_power]
+	_health_label.tooltip_text = "Health: %.1f / %d\nRegeneration: %.2f HP/s" % [
+		maxf(unit.current_health, 0.0), stats.get_max_health(), stats.health_regen
+	]
+	_mana_label.tooltip_text = "Mana: %.1f / %d\nRegeneration: %.2f mana/s" % [
+		maxf(unit.current_mana, 0.0), stats.max_mana, stats.mana_regen
+	]
+	_combat_label.text = "ATK %d  |  AS %.2f\nArmor %d%%  |  MR %d%%\nRange %d  |  AP %d" % [
+		stats.get_attack_damage(), stats.attack_speed, stats.armor,
+		stats.magic_resist, stats.attack_range, stats.ability_power
+	]
 	_damage_label.text = "Damage %.0f" % unit.damage_dealt
 	_damage_label.tooltip_text = "Damage dealt this battle: %.1f" % unit.damage_dealt
-	if unit._is_dead or unit.current_health <= 0.0:
+	if unit.is_dead() or unit.current_health <= 0.0:
 		for button: Button in _upgrade_buttons:
 			button.disabled = true
 	_refresh_remove_button()
@@ -132,7 +143,10 @@ func _connect_listeners() -> void:
 	if not is_instance_valid(unit):
 		return
 	var callback: Callable = _refresh_live_values.unbind(1)
-	for value_signal: Signal in [unit.health_changed, unit.mana_changed, unit.damage_dealt_changed]:
+	var value_signals: Array[Signal] = [
+		unit.health_changed, unit.mana_changed, unit.damage_dealt_changed
+	]
+	for value_signal: Signal in value_signals:
 		if not value_signal.is_connected(callback):
 			value_signal.connect(callback)
 	if is_instance_valid(_player_stats) and not _player_stats.changed.is_connected(refresh):
@@ -142,7 +156,10 @@ func _connect_listeners() -> void:
 func _disconnect_listeners() -> void:
 	if is_instance_valid(unit):
 		var callback: Callable = _refresh_live_values.unbind(1)
-		for value_signal: Signal in [unit.health_changed, unit.mana_changed, unit.damage_dealt_changed]:
+		var value_signals: Array[Signal] = [
+		unit.health_changed, unit.mana_changed, unit.damage_dealt_changed
+	]
+		for value_signal: Signal in value_signals:
 			if value_signal.is_connected(callback):
 				value_signal.disconnect(callback)
 	if is_instance_valid(_player_stats) and _player_stats.changed.is_connected(refresh):
@@ -155,22 +172,32 @@ func _get_portrait(stats: UnitStats) -> Texture2D:
 		var animation: StringName = &"idle"
 		if not stats.sprite_frames.has_animation(animation) and not animations.is_empty():
 			animation = StringName(animations[0])
-		if stats.sprite_frames.has_animation(animation) and stats.sprite_frames.get_frame_count(animation) > 0:
+		if stats.sprite_frames.has_animation(animation) \
+				and stats.sprite_frames.get_frame_count(animation) > 0:
 			return stats.sprite_frames.get_frame_texture(animation, 0)
 	var spritesheet: Texture2D = UnitStats.TEAM_SPRITESHEET.get(stats.team) as Texture2D
 	if not spritesheet:
 		return null
 	var atlas: AtlasTexture = AtlasTexture.new()
 	atlas.atlas = spritesheet
-	atlas.region = Rect2(Vector2(stats.skin_coordinates) * 32.0, Vector2(32.0, 32.0))
+	atlas.region = Rect2(
+		Vector2(stats.skin_coordinates) * Vector2(stats.tile_size),
+		Vector2(stats.tile_size)
+	)
 	return atlas
 
 
 func _faction_name(faction: UnitStats.Faction) -> String:
-	return "No faction" if faction == UnitStats.Faction.NONE else String(UnitStats.Faction.keys()[faction]).capitalize()
+	if faction == UnitStats.Faction.NONE:
+		return "No faction"
+	var key: String = UnitStats.Faction.keys()[faction]
+	return String(key).capitalize()
 
 
-func _set_ability(title: Label, description_label: Label, kind: String, ability_name: String, description: String) -> void:
+func _set_ability(
+	title: Label, description_label: Label,
+	kind: String, ability_name: String, description: String
+) -> void:
 	title.text = "%s: %s" % [kind, ability_name]
 	description_label.text = description
 	title.tooltip_text = _wrap_tooltip("%s\n%s" % [title.text, description])
@@ -178,7 +205,10 @@ func _set_ability(title: Label, description_label: Label, kind: String, ability_
 
 
 func _refresh_upgrades(stats: UnitStats) -> void:
-	_upgrade_header.text = "Upgrades | Gold %d" % _player_stats.gold if is_instance_valid(_player_stats) else "Upgrades | Gold unavailable"
+	if is_instance_valid(_player_stats):
+		_upgrade_header.text = "Upgrades | Gold %d" % _player_stats.gold
+	else:
+		_upgrade_header.text = "Upgrades | Gold unavailable"
 	var targets: Array[UnitStats] = []
 	if not stats.is_king:
 		for target: UnitStats in stats.upgrades:
@@ -231,11 +261,13 @@ func _clear_upgrades() -> void:
 
 
 func _upgrade_block_reason() -> String:
-	if not _has_valid_unit() or unit._is_dead or unit.current_health <= 0.0:
+	if not _has_valid_unit() or unit.is_dead() or unit.current_health <= 0.0:
 		return "Unit is no longer alive."
 	if unit.stats.is_king:
 		return "The King cannot be upgraded."
-	if unit.is_in_group("dragging") or (is_instance_valid(unit.drag_and_drop) and unit.drag_and_drop.dragging):
+	var dragging: bool = unit.is_in_group("dragging")
+	dragging = dragging or (is_instance_valid(unit.drag_and_drop) and unit.drag_and_drop.dragging)
+	if dragging:
 		return "Finish moving the unit first."
 	if not _upgrades_enabled:
 		return "Upgrades require preparation."
@@ -247,18 +279,31 @@ func _upgrade_block_reason() -> String:
 func _build_upgrade_tooltip(target: UnitStats, cost: int) -> String:
 	var lines: PackedStringArray = [
 		"%s (+%d gold)" % [target.name, cost],
-		"Tier %d | %s | Total value: %d gold" % [target.tier, _faction_name(target.faction), target.gold_cost],
+		"Tier %d | %s | Total value: %d gold" % [
+			target.tier, _faction_name(target.faction), target.gold_cost
+		],
 		"Base stats, before passive and faction bonuses:",
-		"HP %d | Mana %d | ATK %d | AS %.2f" % [target.get_max_health(), target.max_mana, target.get_attack_damage(), target.attack_speed],
-		"Armor %d%% | MR %d%% | Range %d | AP %d" % [target.armor, target.magic_resist, target.attack_range, target.ability_power],
-		"HP regen %.2f/s | Mana regen %.2f/s" % [target.health_regen, target.mana_regen],
+		"HP %d | Mana %d | ATK %d | AS %.2f" % [
+			target.get_max_health(), target.max_mana,
+			target.get_attack_damage(), target.attack_speed
+		],
+		"Armor %d%% | MR %d%% | Range %d | AP %d" % [
+			target.armor, target.magic_resist, target.attack_range, target.ability_power
+		],
+		"HP regen %.2f/s | Mana regen %.2f/s" % [
+			target.health_regen, target.mana_regen
+		],
 	]
 	if target.ability_resource:
-		lines.append("\nActive: %s\n%s" % [target.ability_resource.ability_name, target.ability_resource.description])
+		lines.append("\nActive: %s\n%s" % [
+			target.ability_resource.ability_name, target.ability_resource.description
+		])
 	else:
 		lines.append("\nActive: None")
 	if target.passive_ability:
-		lines.append("\nPassive: %s\n%s" % [target.passive_ability.passive_name, target.passive_ability.description])
+		lines.append("\nPassive: %s\n%s" % [
+			target.passive_ability.passive_name, target.passive_ability.description
+		])
 	else:
 		lines.append("\nPassive: None")
 	return _wrap_tooltip("\n".join(lines))
@@ -278,7 +323,9 @@ func _wrap_tooltip(text: String) -> String:
 
 
 func _on_upgrade_pressed(source: WeakRef, target: UnitStats) -> void:
-	if not _has_valid_unit() or source.get_ref() != unit or not is_instance_valid(target) or not unit.stats.upgrades.has(target):
+	var stale: bool = not _has_valid_unit() or source.get_ref() != unit
+	stale = stale or not is_instance_valid(target) or not unit.stats.upgrades.has(target)
+	if stale:
 		print("[SelectedUnitPanel] Ignored stale upgrade request")
 		refresh()
 		return
@@ -290,7 +337,9 @@ func _on_upgrade_pressed(source: WeakRef, target: UnitStats) -> void:
 		print("[SelectedUnitPanel] Upgrade blocked: %s" % reason)
 		refresh()
 		return
-	print("[SelectedUnitPanel] Upgrade requested: %s -> %s (+%d gold)" % [unit.stats.name, target.name, cost])
+	print("[SelectedUnitPanel] Upgrade requested: %s -> %s (+%d gold)" % [
+		unit.stats.name, target.name, cost
+	])
 	upgrade_requested.emit(unit, target)
 
 
@@ -323,11 +372,13 @@ func _refresh_remove_button() -> void:
 
 
 func _removal_block_reason() -> String:
-	if not _has_valid_unit() or unit._is_dead or unit.current_health <= 0.0:
+	if not _has_valid_unit() or unit.is_dead() or unit.current_health <= 0.0:
 		return "Unit is no longer alive."
 	if unit.stats.is_king:
 		return "The King cannot be removed."
-	if unit.is_in_group("dragging") or (is_instance_valid(unit.drag_and_drop) and unit.drag_and_drop.dragging):
+	var dragging: bool = unit.is_in_group("dragging")
+	dragging = dragging or (is_instance_valid(unit.drag_and_drop) and unit.drag_and_drop.dragging)
+	if dragging:
 		return "Finish moving the unit first."
 	if not _upgrades_enabled:
 		return "Removal requires preparation."

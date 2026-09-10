@@ -175,7 +175,7 @@ tile_set = ExtResource("1_1qjuf")
 [node name="ArenaUnitGrid" type="Node2D" parent="GameArea" unique_id=161831544]
 position = Vector2(0, -32)
 script = ExtResource("4_asdgj")
-size = Vector2i(30, 12)
+size = Vector2i(120, 48)
 
 [node name="TileHighlighter" type="Node" parent="GameArea" unique_id=1267761628 node_paths=PackedStringArray("play_area", "highlight_layer")]
 script = ExtResource("6_u52cf")
@@ -203,7 +203,7 @@ tile_set = ExtResource("1_1qjuf")
 [node name="ArenaUnitGrid" type="Node2D" parent="EnemyArea" unique_id=1437138862]
 position = Vector2(0, -32)
 script = ExtResource("4_asdgj")
-size = Vector2i(30, 4)
+size = Vector2i(120, 16)
 
 [node name="TileHighlighter" type="Node" parent="EnemyArea" unique_id=2108021136 node_paths=PackedStringArray("play_area", "highlight_layer")]
 script = ExtResource("6_u52cf")

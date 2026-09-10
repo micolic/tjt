@@ -271,12 +271,13 @@ func _spawn_enemy_at_top(stats: UnitStats) -> Node:
 		new_unit.stats = stats
 
 	# Determine spawn position: random X near center of the enemy area, at the top row (y=0)
+	var footprint: Vector2i = UnitGrid.footprint_of(new_unit)
 	var grid_size: Vector2i = enemy_area.unit_grid.size
-	var center_x: int = grid_size.x >> 1
-	var spread: int = 3  # ±3 tiles from center
-	var random_x: int = randi_range(center_x - spread, center_x + spread)
+	var center_x: int = (grid_size.x - footprint.x) >> 1
+	var spread: int = 12  # ±12 logical cells (±3 old 32px tiles) from center
+	var random_x: int = clampi(randi_range(center_x - spread, center_x + spread), 0, grid_size.x - footprint.x)
 	var spawn_tile := Vector2i(random_x, 0)
-	var spawn_pos: Vector2 = enemy_area.get_global_from_tile(spawn_tile) - Arena.HALF_CELL_SIZE
+	var spawn_pos: Vector2 = enemy_area.get_unit_position(spawn_tile, footprint)
 
 	# Add to scene tree (parent to enemy area so it moves with the scene)
 	enemy_area.add_child(new_unit)
@@ -442,12 +443,8 @@ func _save_ally_positions() -> void:
 		if unit is Unit:
 			unit.drag_and_drop.cancel()
 		
-		# Find which tile this unit is on
-		var tile: Vector2i = Vector2i(-1, -1)
-		for t in game_area.unit_grid.units.keys():
-			if game_area.unit_grid.units[t] == unit:
-				tile = t
-				break
+		# Find this unit's anchor cell in the grid
+		var tile: Vector2i = game_area.unit_grid.get_unit_anchor(unit)
 		
 		saved_ally_positions[unit] = {
 			"tile": tile,
@@ -462,8 +459,7 @@ func _restore_ally_positions() -> void:
 		return
 	
 	# First clear the grid
-	for tile in game_area.unit_grid.units.keys():
-		game_area.unit_grid.units[tile] = null
+	game_area.unit_grid.clear()
 	
 	var _restored_count: int = 0
 	for unit in saved_ally_positions.keys():
@@ -474,8 +470,8 @@ func _restore_ally_positions() -> void:
 		var tile: Vector2i = data["tile"]
 		var saved_pos: Vector2 = data["global_pos"]
 		
-		# Re-register in grid
-		if tile != Vector2i(-1, -1) and game_area.unit_grid.units.has(tile):
+		# Re-register in grid at the saved anchor
+		if tile != Vector2i(-1, -1):
 			game_area.unit_grid.add_unit(tile, unit)
 		
 		# Restore position

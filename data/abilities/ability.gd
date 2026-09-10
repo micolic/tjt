@@ -137,8 +137,8 @@ func _get_units_in_range(caster: Unit, ability_range: float) -> Array:
 func _is_unit_alive(unit: Node) -> bool:
 	if not is_instance_valid(unit):
 		return false
-	# Check _is_dead guard (present on both Unit and EnemyUnit)
-	if "_is_dead" in unit and unit._is_dead:
+	# Check death guard (present on both Unit and EnemyUnit)
+	if unit.has_method("is_dead") and unit.is_dead():
 		return false
 	# Check HP via current_health or stats.health
 	if "current_health" in unit:

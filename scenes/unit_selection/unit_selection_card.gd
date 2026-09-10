@@ -46,9 +46,8 @@ func _update_display() -> void:
 			var atlas := AtlasTexture.new()
 			atlas.atlas = spritesheet
 			atlas.region = Rect2(
-				unit_stats.skin_coordinates.x * 32,
-				unit_stats.skin_coordinates.y * 32,
-				32, 32
+				Vector2(unit_stats.skin_coordinates) * Vector2(unit_stats.tile_size),
+				Vector2(unit_stats.tile_size)
 			)
 			sprite_preview.texture = atlas
 

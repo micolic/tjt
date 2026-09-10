@@ -10,8 +10,6 @@ signal mana_changed(new_mana: int)  # Receives int for UI display
 signal damage_dealt_changed(new_damage: float)
 signal selection_requested(unit: Unit)
 
-const CELL_SIZE := Vector2(32, 32)
-
 ## Verbose ability logging (mirrors UnitAI.DEBUG_AI_VERBOSE)
 const DEBUG_AI_VERBOSE: bool = false
 
@@ -30,6 +28,11 @@ var is_selected: bool = false
 var _health_flash_id: int = 0
 var _skin_flash_id: int = 0
 var _is_dead: bool = false  ## Guard: prevents multiple death signal emissions
+
+## Returns true if the unit has died and is queued for deletion.
+func is_dead() -> bool:
+	return _is_dead
+
 var current_health: float : set = _set_current_health
 var current_mana: float : set = _set_current_mana
 var ability_on_cooldown: bool = false
@@ -77,9 +80,10 @@ func _ready() -> void:
 		var parent_node = get_parent()
 		if parent_node and parent_node is PlayArea and parent_node.unit_grid:
 			var play_area: PlayArea = parent_node as PlayArea
-			var tile = play_area.get_tile_from_global(global_position)
-			if play_area.is_tile_within_bounds(tile) and not play_area.unit_grid.is_tile_occupied(tile):
-				play_area.unit_grid.add_unit(tile, self)
+			var fp := UnitGrid.footprint_of(self)
+			var anchor = play_area.get_anchor_for_global(global_position, fp)
+			if play_area.unit_grid.is_area_free(anchor, fp):
+				play_area.unit_grid.add_unit(anchor, self)
 
 
 var _battle_manager_cache: Node = null  ## Cached BattleManager reference
@@ -266,18 +270,64 @@ func set_stats(value: UnitStats) -> void:
 	else:
 		# Set the correct spritesheet based on team
 		skin.texture = value.TEAM_SPRITESHEET[value.team]
-		skin.region_rect.position = Vector2(stats.skin_coordinates) * CELL_SIZE
+		skin.region_rect = Rect2(
+			Vector2(stats.skin_coordinates) * Vector2(value.tile_size),
+			Vector2(value.tile_size)
+		)
+		# The unit's origin is the footprint center. Raise the sprite by half the
+		# tile height so the unit's base sits near the tile center and it does not
+		# look like it is lying on the bottom edge of the highlighted tile.
+		if skin is Sprite2D:
+			var y_off: float = -float(value.tile_size.y) / 2.0
+			skin.offset = Vector2(0, y_off)
+			# Animator captures _base_offset in _ready before set_stats runs, then
+			# overrides skin.offset.y every frame. Sync it so the offset persists.
+			if animator:
+				animator.set_base_offset(skin.offset)
 
 	# Apply visual scale (e.g. King is larger)
 	if value.visual_scale != 1.0:
 		$Visuals.scale = Vector2(value.visual_scale, value.visual_scale)
 		# Re-capture base scale so animator restores the correct size after attacks
 		if animator:
-			animator._base_scale = $Visuals.scale
-	
+			animator.set_base_scale($Visuals.scale)
+
+	# Position HP/Mana bars above the (visually scaled) sprite, centered on the unit.
+	_update_bar_positions()
+
 	# Connect stats signals if not in editor
 	if not Engine.is_editor_hint():
 		_connect_stats_signals()
+
+	print("[Unit] set_stats '%s' tile_size=%s visual_scale=%s skin.offset=%s global_pos=%s" % [
+		value.name, value.tile_size, value.visual_scale,
+		skin.offset if skin is Sprite2D else Vector2.ZERO,
+		global_position
+	])
+
+
+## Repositions HP and Mana bars so they sit just above the sprite.
+## The sprite is raised by skin.offset.y (in Visuals-local space); since Visuals
+## is scaled by visual_scale, the raise in the unit's local space is
+## skin.offset.y * visual_scale. The bars follow the raised sprite.
+func _update_bar_positions() -> void:
+	if not stats or not health_bar or not mana_bar:
+		return
+	var scaled_size: Vector2 = Vector2(stats.tile_size) * stats.visual_scale
+	var half_size: Vector2 = scaled_size * 0.5
+	# Match the sprite raise so bars sit above the raised sprite, not the tile.
+	var skin_raise: float = (skin.offset.y if skin is Sprite2D else 0.0) * stats.visual_scale
+	var top: float = -half_size.y + skin_raise
+	var h_bar: ProgressBar = health_bar
+	var m_bar: ProgressBar = mana_bar
+	h_bar.offset_left = -half_size.x + 1.0
+	h_bar.offset_right = half_size.x - 1.0
+	h_bar.offset_top = top - 12.0
+	h_bar.offset_bottom = top - 6.0
+	m_bar.offset_left = -half_size.x + 1.0
+	m_bar.offset_right = half_size.x - 1.0
+	m_bar.offset_top = top - 5.0
+	m_bar.offset_bottom = top - 1.0
 
 
 ## Swaps the static Sprite2D skin for an AnimatedSprite2D using the stats' sprite_frames.

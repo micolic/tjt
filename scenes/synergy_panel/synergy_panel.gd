@@ -46,9 +46,12 @@ func _refresh() -> void:
 		for d in range(threshold):
 			dots += "●" if d < count else "○"
 		var status := " ACTIVE" if active else ""
-		var label_text := "%s %s %d/%d%s" % [_faction_icon(faction), def.name, count, threshold, status]
+		var label_text := "%s %s %d/%d%s" % [
+			_faction_icon(faction), def.name, count, threshold, status]
 		row.text = "%s  %s" % [dots, label_text]
-		row.add_theme_color_override("font_color", Color(1.0, 0.87, 0.35) if active else Color(0.76, 0.76, 0.76))
+		row.add_theme_color_override(
+				"font_color",
+				Color(1.0, 0.87, 0.35) if active else Color(0.76, 0.76, 0.76))
 		i += 1
 
 

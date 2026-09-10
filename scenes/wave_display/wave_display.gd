@@ -124,7 +124,9 @@ func _update_display() -> void:
 	
 	# Update current wave label
 	if wave_label and wave_manager.current_wave_number > 0:
-		var label_text = "Wave %d / %d" % [wave_manager.current_wave_number, wave_manager.get_total_waves()]
+		var label_text = "Wave %d / %d" % [
+			wave_manager.current_wave_number,
+			wave_manager.get_total_waves()]
 		if wave_manager.is_boss_wave():
 			label_text += " BOSS"
 		wave_label.text = label_text

@@ -52,7 +52,8 @@ func _execute_heal(caster: Unit, targets: Array) -> void:
 			need = target.get_effective_missing_health()
 		else:
 			# Fallback: raw missing HP
-			var hp: float = target.current_health if "current_health" in target else target.stats.health
+			var hp: float = target.current_health if "current_health" in target \
+					else target.stats.health
 			need = target.stats.max_health - hp
 
 		if need > biggest_need:

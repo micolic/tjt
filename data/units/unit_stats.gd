@@ -139,7 +139,11 @@ func get_attack_damage() -> int:
 ## Armor and magic_resist are treated as direct percentages: 15 armor = 15% reduction.
 ## Capped at 90% to prevent full immunity (max 90 armor/MR effective).
 ## Pure: no reduction.
-static func calculate_reduced_damage(damage: float, type: DamageType, armor_param: int, magic_resist_param: int) -> float:
+static func calculate_reduced_damage(
+		damage: float,
+		type: DamageType,
+		armor_param: int,
+		magic_resist_param: int) -> float:
 	match type:
 		DamageType.PHYSICAL:
 			var reduction: float = clampf(float(armor_param), 0.0, 90.0) / 100.0

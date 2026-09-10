@@ -216,7 +216,8 @@ func _start_death() -> void:
 	var jump_prop: String = "offset:y" if skin is Sprite2D else "position:y"
 	var base_y: float = _base_offset.y if skin is Sprite2D else 0.0
 	_death_tween.tween_property(skin, jump_prop, base_y - DEATH_JUMP_PX, DEATH_DURATION * 0.4)
-	_death_tween.parallel().tween_property(skin, "rotation", deg_to_rad(DEATH_SPIN_DEGREES), DEATH_DURATION)
+	_death_tween.parallel().tween_property(
+			skin, "rotation", deg_to_rad(DEATH_SPIN_DEGREES), DEATH_DURATION)
 	_death_tween.parallel().tween_property(skin, "modulate:a", 0.0, DEATH_DURATION)
 
 	# Fall down

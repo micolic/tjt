@@ -225,7 +225,8 @@ func _on_health_reached_zero() -> void:
 	if stats.team == UnitStats.Team.PLAYER and not stats.is_king:
 		var toast_mgr := get_tree().get_first_node_in_group("toast_manager")
 		if toast_mgr and toast_mgr.has_method("show_toast"):
-			toast_mgr.show_toast("%s has fallen permanently" % stats.name, 2.5, Color(1.0, 0.35, 0.35))
+			toast_mgr.show_toast(
+					"%s has fallen permanently" % stats.name, 2.5, Color(1.0, 0.35, 0.35))
 	# Disable AI so dead units stop attacking
 	var ai = get_node_or_null("UnitAI")
 	if ai:
@@ -236,7 +237,9 @@ func _on_health_reached_zero() -> void:
 		vfx_spawner.spawn_vfx_on_unit("death_effect", self)
 	if animator and not animator.is_dead():
 		animator.play(UnitAnimator.AnimState.DEATH)
-		animator.death_animation_finished.connect(func(): UnitVisuals.handle_unit_death(self), CONNECT_ONE_SHOT)
+		animator.death_animation_finished.connect(
+				func(): UnitVisuals.handle_unit_death(self),
+				CONNECT_ONE_SHOT)
 	else:
 		UnitVisuals.handle_unit_death(self)
 
@@ -434,7 +437,8 @@ func _on_mana_bar_filled() -> void:
 	# Cast the ability
 	var cast_ok := cast_ability()
 	# If no valid targets, retry every second while mana stays full
-	if not cast_ok and not ability_on_cooldown and current_mana >= stats.max_mana and not _mana_retry_task_running:
+	if not cast_ok and not ability_on_cooldown and current_mana >= stats.max_mana \
+			and not _mana_retry_task_running:
 		_mana_retry_task_running = true
 		# start async retry loop
 		while current_mana >= stats.max_mana and not ability_on_cooldown:
@@ -479,7 +483,8 @@ func cast_ability() -> bool:
 
 ## Apply damage to this unit (uniform interface for AI/abilities).
 ## damage_type controls armor/MR reduction (default PHYSICAL for auto-attacks).
-func apply_damage(damage: int, damage_type: UnitStats.DamageType = UnitStats.DamageType.PHYSICAL) -> void:
+func apply_damage(
+		damage: int, damage_type: UnitStats.DamageType = UnitStats.DamageType.PHYSICAL) -> void:
 	var reduced: float = UnitStats.calculate_reduced_damage(
 		float(damage), damage_type, stats.armor if stats else 0, stats.magic_resist if stats else 0
 	)

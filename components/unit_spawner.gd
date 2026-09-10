@@ -37,7 +37,8 @@ func spawn_unit(unit: UnitStats, tile: Vector2i = Vector2i(-1, -1)) -> Node:
 		assert(not enemy_area.unit_grid.is_grid_full(), "Enemy area is full!")
 	
 	var new_unit: Node = unit_scene.instantiate()
-	# Determine anchor to spawn at: use provided anchor if the footprint fits, otherwise first available
+	# Determine anchor to spawn at: use provided anchor if the footprint fits, otherwise first
+	# available
 	var footprint: Vector2i = unit.footprint if "footprint" in unit else UnitGrid.DEFAULT_FOOTPRINT
 	var spawn_tile: Vector2i = tile
 	if spawn_tile == Vector2i(-1, -1) or not area.unit_grid.is_area_free(spawn_tile, footprint):

@@ -56,7 +56,8 @@ func _process(delta: float) -> void:
 		var status := ResourceLoader.load_threaded_get_status(_target_scene)
 		if status == ResourceLoader.THREAD_LOAD_LOADED:
 			_scene_ready = true
-		elif status == ResourceLoader.THREAD_LOAD_FAILED or status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+		elif status == ResourceLoader.THREAD_LOAD_FAILED \
+				or status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
 			# Fallback: direct load
 			push_warning("[LoadingScreen] Threaded load failed, using direct change_scene_to_file.")
 			get_tree().change_scene_to_file(_target_scene)

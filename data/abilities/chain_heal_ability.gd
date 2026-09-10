@@ -51,7 +51,8 @@ func execute(caster: Unit, targets: Array) -> void:
 			target.flash_skin(Color.GREEN)
 		if vfx_spawner and vfx_spawner.has_method("spawn_vfx_on_unit"):
 			vfx_spawner.spawn_vfx_on_unit("explosion_heal", target)
-		UnitVisuals.spawn_damage_number(caster.get_tree(), target.global_position, actual, Color.GREEN)
+		UnitVisuals.spawn_damage_number(
+				caster.get_tree(), target.global_position, actual, Color.GREEN)
 		hops += 1
 		current_heal *= bounce_falloff
 

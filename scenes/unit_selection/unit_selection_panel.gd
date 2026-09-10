@@ -167,7 +167,8 @@ func set_interactable(enabled: bool) -> void:
 		cancel_selection()
 	for card in _cards.values():
 		if card is Control:
-			card.mouse_filter = Control.MOUSE_FILTER_STOP if enabled else Control.MOUSE_FILTER_IGNORE
+			card.mouse_filter = Control.MOUSE_FILTER_STOP \
+					if enabled else Control.MOUSE_FILTER_IGNORE
 			if enabled:
 				# Respect affordability when re-enabling
 				_update_affordability()

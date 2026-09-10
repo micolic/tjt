@@ -97,7 +97,9 @@ func _update_wave_display() -> void:
 	if not _is_prep_phase:
 		enemy_count_label.text = "Enemies: %d" % wave_manager.remaining_enemies
 	if wave_manager.current_wave_number > 0 and not _is_prep_phase:
-		var lbl: String = "Wave %d / %d" % [wave_manager.current_wave_number, wave_manager.get_total_waves()]
+		var lbl: String = "Wave %d / %d" % [
+			wave_manager.current_wave_number,
+			wave_manager.get_total_waves()]
 		if wave_manager.is_boss_wave():
 			lbl += "  ⚠ BOSS"
 		wave_label.text = lbl
@@ -141,7 +143,9 @@ func _refresh_synergies() -> void:
 		for d in range(threshold):
 			dots += "●" if d < count else "○"
 		row.text = "%s %s %s %d/%d" % [dots, _faction_icon(faction), def.name, count, threshold]
-		row.add_theme_color_override("font_color", Color(1.0, 0.87, 0.35) if active else Color(0.76, 0.76, 0.76))
+		row.add_theme_color_override(
+				"font_color",
+				Color(1.0, 0.87, 0.35) if active else Color(0.76, 0.76, 0.76))
 		row.mouse_filter = Control.MOUSE_FILTER_STOP
 		row.tooltip_text = _synergy_tooltip(faction, def, count, threshold, active)
 		i += 1
@@ -185,7 +189,12 @@ func _setup_tooltips() -> void:
 	quit_game_button.tooltip_text = "Quit the game immediately."
 
 
-func _synergy_tooltip(faction: UnitStats.Faction, def: Dictionary, count: int, threshold: int, active: bool) -> String:
+func _synergy_tooltip(
+		faction: UnitStats.Faction,
+		def: Dictionary,
+		count: int,
+		threshold: int,
+		active: bool) -> String:
 	var bonus := ""
 	match faction:
 		UnitStats.Faction.WARRIOR:

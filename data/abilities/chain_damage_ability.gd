@@ -3,7 +3,8 @@ class_name ChainDamageAbility
 
 ## Chain damage — hits the nearest enemy, then bounces to the next nearest enemy up to
 ## `max_bounces` times, each bounce dealing `bounce_falloff`× the previous hit.
-## Modelled on Legion TD's Druid "Wrath of Nature" (100 dmg, bounces up to 5×) — now "Nature's Fury".
+## Modelled on Legion TD's Druid "Wrath of Nature" (100 dmg, bounces up to 5×) — now "Nature's
+## Fury".
 ## Royal Griffin's "Storm Hammers" (bounces twice with reduced damage).
 
 @export var damage: float = 100.0

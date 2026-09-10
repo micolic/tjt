@@ -13,20 +13,20 @@ class_name PassiveAbility
 ## ("No RNG should decide a match").
 
 enum PassiveType {
-	HEALTH_REGEN_BONUS,    # +value% health regen                               (Warrior's Endurance)
+	HEALTH_REGEN_BONUS,    # +value% health regen                    (Warrior's Endurance)
 	MANA_REGEN_BONUS,      # +value% mana regen
-	DAMAGE_BONUS,          # +value% attack damage                              (Deadly Focus)
-	ARMOR_BONUS,           # +value flat armor                                  (Iron Bastion)
-	SPEED_BONUS,           # +value% attack speed                               (Chemical Rage-lite)
+	DAMAGE_BONUS,          # +value% attack damage                   (Deadly Focus)
+	ARMOR_BONUS,           # +value flat armor                       (Iron Bastion)
+	SPEED_BONUS,           # +value% attack speed                    (Chemical Rage-lite)
 	MAX_HEALTH_BONUS,      # +value% max health
-	DAMAGE_REDUCTION,      # every incoming hit -value flat (after armor/MR)     (Harden Armor)
-	NTH_ATTACK_MULTIPLIER, # every `interval`-th attack deals value× damage     (Precision, Vital Slice)
-	MAGIC_MISSILE,         # every attack adds value flat MAGICAL damage         (Sentry's Magic Missile)
-	LIFESTEAL,             # heal value (0.15 = 15%) of damage dealt per hit     (Frenzy Ghoul)
-	ARMOR_SHRED,           # every hit permanently removes value armor (min 0)   (Corruption / Faerie Fire)
-	SPLASH,                # every hit deals value× damage to enemies within `radius` of target (Circle Splash)
-	MULTISHOT,             # every hit also strikes `extra_targets` nearest other enemies for value× (Burst Shot)
-	BERSERK,               # +value% attack speed per HP threshold crossed (60/40/20%) (Ravager's Bloodrage)
+	DAMAGE_REDUCTION,      # every hit -value flat (after armor/MR)  (Harden Armor)
+	NTH_ATTACK_MULTIPLIER, # every `interval`-th attack deals value× (Precision, Vital Slice)
+	MAGIC_MISSILE,         # every attack +value flat MAGICAL dmg    (Sentry's Magic Missile)
+	LIFESTEAL,             # heal value of damage dealt per hit      (Frenzy Ghoul)
+	ARMOR_SHRED,           # every hit removes value armor (min 0)   (Corruption/Faerie Fire)
+	SPLASH,                # every hit: value× to enemies near target (Circle Splash)
+	MULTISHOT,             # every hit: +extra_targets for value×    (Burst Shot)
+	BERSERK,               # +value% atk spd per HP threshold        (Ravager's Bloodrage)
 }
 
 ## Floor for DAMAGE_REDUCTION — a hit can never be reduced to zero so no unit is fully immune.
@@ -141,7 +141,8 @@ func on_attack_hit(unit: Node, target: Node, damage_dealt: int) -> void:
 				unit.current_health = minf(unit.current_health + heal, unit.stats.max_health)
 				var healed: float = unit.current_health - before
 				if healed > 0.0:
-					UnitVisuals.spawn_damage_number(unit.get_tree(), unit.global_position, healed, Color.GREEN)
+					UnitVisuals.spawn_damage_number(
+							unit.get_tree(), unit.global_position, healed, Color.GREEN)
 		PassiveType.ARMOR_SHRED:
 			if target.stats and target.stats.armor > 0:
 				target.stats.armor = maxi(target.stats.armor - int(value), 0)
@@ -172,7 +173,8 @@ func on_attack_hit(unit: Node, target: Node, damage_dealt: int) -> void:
 ## Called whenever the unit's health changes (damage, heal, between-wave reset).
 ## BERSERK: attack speed = base × (1 + value × thresholds crossed).
 func on_health_changed(unit: Node) -> void:
-	if passive_type != PassiveType.BERSERK or not unit.stats or not unit.has_meta(META_BASE_ATTACK_SPEED):
+	if passive_type != PassiveType.BERSERK or not unit.stats \
+			or not unit.has_meta(META_BASE_ATTACK_SPEED):
 		return
 	var hp_fraction: float = 1.0
 	if unit.stats.max_health > 0 and "current_health" in unit:
@@ -191,8 +193,10 @@ func on_health_changed(unit: Node) -> void:
 
 ## Returns living enemies of `unit` other than `primary`, sorted by distance to `primary`.
 ## max_distance 0 = unlimited; max_count 0 = unlimited.
-func _get_other_enemies_near(unit: Node, primary: Node, max_distance: float, max_count: int) -> Array:
-	var group_name: String = "enemy_units" if unit.stats.team == UnitStats.Team.PLAYER else "player_units"
+func _get_other_enemies_near(
+		unit: Node, primary: Node, max_distance: float, max_count: int) -> Array:
+	var group_name: String = "enemy_units" if unit.stats.team == UnitStats.Team.PLAYER \
+			else "player_units"
 	var candidates: Array = []
 	for enemy in unit.get_tree().get_nodes_in_group(group_name):
 		if enemy == primary or not is_instance_valid(enemy) or not enemy.has_method("apply_damage"):

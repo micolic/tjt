@@ -228,7 +228,8 @@ func _spawn_wave(wave_config: WaveConfig) -> void:
 		if spawned_unit:
 			spawned_enemies.append(spawned_unit)
 			# Connect death signal
-			if "stats" in spawned_unit and spawned_unit.stats and spawned_unit.stats.has_signal("health_reached_zero"):
+			if "stats" in spawned_unit and spawned_unit.stats \
+					and spawned_unit.stats.has_signal("health_reached_zero"):
 				spawned_unit.stats.health_reached_zero.connect(_on_enemy_died.bindv([spawned_unit]))
 			# Enable AI immediately so unit starts walking
 			var ai = spawned_unit.get_node_or_null("UnitAI")
@@ -268,7 +269,10 @@ func _spawn_enemy_at_top(stats: UnitStats) -> Node:
 	var grid_size: Vector2i = enemy_area.unit_grid.size
 	var center_x: int = (grid_size.x - footprint.x) >> 1
 	var spread: int = 12  # ±12 logical cells (±3 old 32px tiles) from center
-	var random_x: int = clampi(randi_range(center_x - spread, center_x + spread), 0, grid_size.x - footprint.x)
+	var random_x: int = clampi(
+			randi_range(center_x - spread, center_x + spread),
+			0,
+			grid_size.x - footprint.x)
 	var spawn_tile := Vector2i(random_x, 0)
 	var spawn_pos: Vector2 = enemy_area.get_unit_position(spawn_tile, footprint)
 
@@ -325,7 +329,8 @@ func _complete_wave() -> void:
 	wave_completed.emit(current_wave_number)
 	
 	# Give rewards
-	var wave_config: WaveConfig = waves[current_wave_index] if current_wave_index < waves.size() else null
+	var wave_config: WaveConfig = waves[current_wave_index] \
+			if current_wave_index < waves.size() else null
 	if wave_config and player_stats:
 		var gold_reward = wave_config.gold_reward
 		var xp_reward = wave_config.experience_reward

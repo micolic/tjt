@@ -25,7 +25,8 @@ func _ready() -> void:
 		add_child(_container)
 
 
-func show_toast(message: String, duration: float = DEFAULT_DURATION, color: Color = DEFAULT_COLOR) -> void:
+func show_toast(
+		message: String, duration: float = DEFAULT_DURATION, color: Color = DEFAULT_COLOR) -> void:
 	var label := Label.new()
 	label.text = message
 	label.add_theme_font_size_override("font_size", 16)

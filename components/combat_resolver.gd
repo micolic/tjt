@@ -7,7 +7,8 @@ extends RefCounted
 ##   1. attacker passive `modify_outgoing_damage`  (every-Nth-attack multipliers)
 ##   2. target.apply_damage(PHYSICAL)              (armor + target's own DAMAGE_REDUCTION passive)
 ##   3. damage counters                            (per-unit + Arena readout)
-##   4. attacker passive `on_attack_hit`           (magic missile, lifesteal, splash, multishot, shred)
+##   4. attacker passive `on_attack_hit`           (magic missile, lifesteal, splash, multishot,
+## shred)
 ##
 ## Ability damage (Fireball, Wrath of Nature, ...) does NOT go through here — abilities are
 ## not "attacks" and must not trigger on-hit passives. Works for both Unit and EnemyUnit.
@@ -25,7 +26,9 @@ static func resolve_basic_attack(attacker: Node, target: Node, base_damage: int)
 
 	var hp_before: float = target.current_health if "current_health" in target else 0.0
 	target.apply_damage(damage, UnitStats.DamageType.PHYSICAL)
-	var hp_after: float = target.current_health if ("current_health" in target and is_instance_valid(target)) else 0.0
+	var hp_after: float = target.current_health\
+			if ("current_health" in target and is_instance_valid(target))\
+			else 0.0
 	var dealt: int = maxi(roundi(hp_before - hp_after), 0)
 
 	if is_instance_valid(attacker):

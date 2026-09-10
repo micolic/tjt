@@ -32,7 +32,8 @@ func setup(p_waves: int, p_gold: int, p_xp: int) -> void:
 
 func _update_stats() -> void:
 	if stats_label:
-		stats_label.text = "Waves: %d  |  Gold: %d  |  XP: %d" % [waves_cleared, gold_earned, xp_earned]
+		stats_label.text = "Waves: %d  |  Gold: %d  |  XP: %d" % [
+			waves_cleared, gold_earned, xp_earned]
 
 
 func _on_play_again() -> void:

@@ -34,7 +34,8 @@ func execute(_caster: Unit, _targets: Array) -> void:
 func get_valid_targets(caster: Unit) -> Array:
 	var targets := []
 	if DEBUG_ABILITY:
-		print("[AbilityDebug] get_valid_targets called for '%s' (team=%s) target_type=%s cast_range=%s" % [caster.stats.name, caster.stats.team, target_type, cast_range])
+		print("[AbilityDebug] get_valid_targets for '%s' (team=%s) type=%s range=%s" % [
+			caster.stats.name, caster.stats.team, target_type, cast_range])
 	
 	match target_type:
 		TargetType.SELF:
@@ -72,7 +73,11 @@ func _filter_by_range(caster: Unit, targets: Array, max_range: float) -> Array:
 	for target in targets:
 		var dist = caster.global_position.distance_to(target.global_position)
 		if DEBUG_ABILITY:
-			print("[AbilityDebug] _filter_by_range: caster=%s target=%s dist=%.1f max=%.1f" % [caster.stats.name, target, dist, max_range])
+			print("[AbilityDebug] _filter_by_range: caster=%s target=%s dist=%.1f max=%.1f" % [
+				caster.stats.name,
+				target,
+				dist,
+				max_range])
 		if dist <= max_range:
 			filtered.append(target)
 	
@@ -85,7 +90,9 @@ func _get_enemy_units(caster: Unit) -> Array:
 	var group_name = "player_units" if caster.stats.team == UnitStats.Team.ENEMY else "enemy_units"
 	var nodes := caster.get_tree().get_nodes_in_group(group_name)
 	if DEBUG_ABILITY:
-		print("[AbilityDebug] _get_enemy_units: looking in group '%s' found %d nodes" % [group_name, nodes.size()])
+		print("[AbilityDebug] _get_enemy_units: looking in group '%s' found %d nodes" % [
+			group_name,
+			nodes.size()])
 	for unit in nodes:
 		if DEBUG_ABILITY:
 			print("[AbilityDebug] candidate: %s (class=%s)" % [unit, unit.get_class()])
@@ -102,7 +109,9 @@ func _get_ally_units(caster: Unit) -> Array:
 	var group_name = "player_units" if caster.stats.team == UnitStats.Team.PLAYER else "enemy_units"
 	var nodes := caster.get_tree().get_nodes_in_group(group_name)
 	if DEBUG_ABILITY:
-		print("[AbilityDebug] _get_ally_units: looking in group '%s' found %d nodes" % [group_name, nodes.size()])
+		print("[AbilityDebug] _get_ally_units: looking in group '%s' found %d nodes" % [
+			group_name,
+			nodes.size()])
 	for unit in nodes:
 		if DEBUG_ABILITY:
 			print("[AbilityDebug] candidate: %s (class=%s)" % [unit, unit.get_class()])
@@ -121,7 +130,10 @@ func _get_units_in_range(caster: Unit, ability_range: float) -> Array:
 		print("[AbilityDebug] _get_units_in_range: scanning 'units' group, %d nodes" % nodes.size())
 	for unit in nodes:
 		if DEBUG_ABILITY:
-			print("[AbilityDebug] range candidate: %s (class=%s) pos=%s" % [unit, unit.get_class(), unit.global_position])
+			print("[AbilityDebug] range candidate: %s (class=%s) pos=%s" % [
+				unit,
+				unit.get_class(),
+				unit.global_position])
 		# Accept nodes that implement the unit interface via UnitUtils and are alive
 		if UnitUtils.is_unit_node(unit) and unit != caster and _is_unit_alive(unit):
 			var dist := caster.global_position.distance_to(unit.global_position)

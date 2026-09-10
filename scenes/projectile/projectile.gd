@@ -6,7 +6,7 @@ class_name Projectile
 @export var speed: float = 300.0
 @export var damage: float = 50.0
 @export var hit_color: Color = Color.ORANGE_RED
-@export var _is_basic_attack: bool = false  ## If true, uses hit_physical VFX instead of explosion_fire
+@export var _is_basic_attack: bool = false  ## If true, uses hit_physical VFX not explosion_fire
 
 var target
 var caster
@@ -87,7 +87,7 @@ func _hit_target() -> void:
 	if target.has_method("flash_skin"):
 		target.flash_skin(hit_color)
 
-	# Spawn hit VFX on target (explosion_fire for ability projectiles, hit_physical for basic attacks)
+	# Spawn hit VFX on target (explosion_fire for ability, hit_physical for basic attacks)
 	var vfx_spawner = get_tree().get_first_node_in_group("vfx_spawner")
 	if vfx_spawner and vfx_spawner.has_method("spawn_vfx_on_unit"):
 		# Use hit_physical for basic attacks (smaller), explosion_fire for ability projectiles
@@ -109,7 +109,8 @@ func _return_to_pool() -> void:
 
 
 
-func setup(from, to, proj_damage: float, color: Color = Color.ORANGE_RED, is_basic: bool = false) -> void:
+func setup(from, to, proj_damage: float,
+		color: Color = Color.ORANGE_RED, is_basic: bool = false) -> void:
 	caster = from
 	target = to
 	damage = proj_damage

@@ -23,7 +23,8 @@ func execute(caster: Unit, targets: Array) -> void:
 		if not is_instance_valid(target):
 			continue
 		# Only heal allies that are actually wounded
-		var current_hp: float = target.current_health if "current_health" in target else target.stats.health
+		var current_hp: float = target.current_health if "current_health" in target \
+				else target.stats.health
 		var max_hp: float = target.stats.max_health
 		if current_hp >= max_hp:
 			continue

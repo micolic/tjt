@@ -53,7 +53,8 @@ func _update_display() -> void:
 
 	# Stats summary
 	var range_text := "Melee" if unit_stats.is_melee() else "Range %d" % unit_stats.attack_range
-	stats_label.text = "HP:%d ATK:%d\n%s" % [unit_stats.max_health, unit_stats.attack_damage, range_text]
+	stats_label.text = "HP:%d ATK:%d\n%s" % [
+		unit_stats.max_health, unit_stats.attack_damage, range_text]
 
 	# Gold cost
 	if cost_label:
@@ -138,8 +139,10 @@ func _build_tooltip() -> String:
 	lines.append(unit_stats.name)
 	lines.append("Tier %d | Cost: %d gold" % [unit_stats.tier, unit_stats.gold_cost])
 	lines.append("Team: %s" % _team_name(unit_stats.team))
-	lines.append("HP: %d | ATK: %d | Range: %d" % [unit_stats.max_health, unit_stats.attack_damage, unit_stats.attack_range])
-	lines.append("Armor: %d | MR: %d | SPD: %.1f" % [unit_stats.armor, unit_stats.magic_resist, unit_stats.attack_speed])
+	lines.append("HP: %d | ATK: %d | Range: %d" % [
+		unit_stats.max_health, unit_stats.attack_damage, unit_stats.attack_range])
+	lines.append("Armor: %d | MR: %d | SPD: %.1f" % [
+		unit_stats.armor, unit_stats.magic_resist, unit_stats.attack_speed])
 	if unit_stats.ability_resource:
 		lines.append("Ability: %s" % unit_stats.ability_resource.ability_name)
 	if unit_stats.passive_ability:
@@ -148,7 +151,8 @@ func _build_tooltip() -> String:
 		lines.append("Synergy: %s" % _faction_tooltip(unit_stats.faction))
 	for upgrade in unit_stats.upgrades:
 		if upgrade:
-			lines.append("Select placed unit to upgrade: %s (+%d gold)" % [upgrade.name, unit_stats.get_upgrade_cost(upgrade)])
+			lines.append("Select placed unit to upgrade: %s (+%d gold)" % [
+				upgrade.name, unit_stats.get_upgrade_cost(upgrade)])
 	return "\n".join(lines)
 
 

@@ -17,7 +17,7 @@ var start_battle_button: Button
 var toggle_units_button: Button
 var quit_game_button: Button
 @onready var enemy_area: PlayArea = $EnemyArea
-@onready var game_area: PlayArea = $GameArea                                                               
+@onready var game_area: PlayArea = $GameArea
 @onready var unit_selection_panel: UnitSelectionPanel = $UI/UnitSelectionPanel
 @onready var selected_unit_panel: SelectedUnitPanel = $UI/SelectedUnitPanel
 @onready var toast_manager: ToastManager = $UI/ToastManager
@@ -174,7 +174,8 @@ func _on_unit_selection_requested(unit: Unit) -> void:
 	if _placement_stats:
 		unit.drag_and_drop.cancel()
 		return
-	if unit.stats.team != UnitStats.Team.PLAYER or unit.current_health <= 0.0 or unit.is_queued_for_deletion():
+	if unit.stats.team != UnitStats.Team.PLAYER or unit.current_health <= 0.0 \
+			or unit.is_queued_for_deletion():
 		return
 	_set_selected_unit(unit)
 
@@ -215,7 +216,8 @@ func _refresh_selected_unit_panel() -> void:
 
 
 func _can_modify_units() -> bool:
-	return not _is_match_over and battle_manager != null and battle_manager.current_state == BattleManager.State.PREPARATION
+	return not _is_match_over and battle_manager != null \
+			and battle_manager.current_state == BattleManager.State.PREPARATION
 
 
 func _set_deck_panel_visible(show_panel: bool) -> void:
@@ -231,7 +233,8 @@ func _cancel_unit_drags() -> void:
 
 # ── Upgrade and removal choices come from the selected unit panel ──
 func _on_upgrade_requested(unit: Unit, target: UnitStats) -> void:
-	if not is_instance_valid(unit) or unit != _selected_unit or not _can_modify_units() or _placement_stats != null:
+	if not is_instance_valid(unit) or unit != _selected_unit \
+			or not _can_modify_units() or _placement_stats != null:
 		return
 	var anchor: Vector2i = game_area.unit_grid.get_unit_anchor(unit)
 	if anchor != Vector2i(-1, -1):
@@ -239,7 +242,8 @@ func _on_upgrade_requested(unit: Unit, target: UnitStats) -> void:
 
 
 func _on_unit_removal_requested(unit: Unit) -> void:
-	if not is_instance_valid(unit) or unit != _selected_unit or not _can_modify_units() or _placement_stats != null:
+	if not is_instance_valid(unit) or unit != _selected_unit \
+			or not _can_modify_units() or _placement_stats != null:
 		return
 	var anchor: Vector2i = game_area.unit_grid.get_unit_anchor(unit)
 	if anchor != Vector2i(-1, -1):
@@ -376,7 +380,8 @@ func _on_battle_state_changed(new_state: int) -> void:
 	if start_battle_button:
 		start_battle_button.disabled = not can_interact
 		if new_state == BattleManager.State.PREPARATION:
-			start_battle_button.text = "Next Wave" if wave_manager and wave_manager.is_waiting_for_next_wave else "Start Battle"
+			var waiting: bool = wave_manager and wave_manager.is_waiting_for_next_wave
+			start_battle_button.text = "Next Wave" if waiting else "Start Battle"
 		elif new_state == BattleManager.State.ENDED:
 			# After wave ends, button will be re-enabled by wave manager prep phase
 			start_battle_button.text = "Start Battle"
@@ -468,7 +473,8 @@ func _on_placement_cancelled() -> void:
 
 func _input(event: InputEvent) -> void:
 	# ── Space toggles unit selection panel ──
-	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_SPACE:
+	if event is InputEventKey and event.pressed and not event.echo \
+			and event.physical_keycode == KEY_SPACE:
 		if _can_modify_units():
 			_on_toggle_units_pressed()
 			get_viewport().set_input_as_handled()
@@ -495,7 +501,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			camera.zoom = Vector2(new_zoom, new_zoom)
 			get_viewport().set_input_as_handled()
 			return
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			var new_zoom := maxf(camera.zoom.x - ZOOM_STEP, ZOOM_MIN)
 			camera.zoom = Vector2(new_zoom, new_zoom)
 			get_viewport().set_input_as_handled()
@@ -531,7 +537,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		unit_selection_panel.cancel_selection()
 		return
 
-	# Left-click → try to place unit on the hovered tile (click mode: on press, drag mode: on release)
+	# Left-click → place on hovered tile (click mode: press, drag mode: release)
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		var want_place := false
 		if _drag_placing and not event.pressed:
@@ -613,7 +619,8 @@ func _remove_placed_unit(tile: Vector2i) -> void:
 	if not _can_modify_units() or _placement_stats != null:
 		return
 	var unit: Unit = game_area.unit_grid.units.get(tile) as Unit
-	if not is_instance_valid(unit) or not unit.stats or unit.current_health <= 0.0 or unit.is_queued_for_deletion():
+	if not is_instance_valid(unit) or not unit.stats or unit.current_health <= 0.0 \
+			or unit.is_queued_for_deletion():
 		return
 	# King cannot be removed
 	if unit.stats.is_king:
@@ -701,7 +708,8 @@ func _create_placement_ghost(unit_stats: UnitStats) -> void:
 	_placement_ghost = Sprite2D.new()
 	_placement_ghost.texture = UnitStats.TEAM_SPRITESHEET.get(unit_stats.team)
 	if not _placement_ghost.texture:
-		push_warning("[Arena] No spritesheet found for team %d — ghost will be invisible" % unit_stats.team)
+		push_warning("[Arena] No spritesheet found for team %d — ghost invisible"
+				% unit_stats.team)
 		_placement_ghost.queue_free()
 		_placement_ghost = null
 		return
@@ -719,7 +727,7 @@ func _create_placement_ghost(unit_stats: UnitStats) -> void:
 
 
 var _stats_update_timer: float = 0.0
-const STATS_UPDATE_INTERVAL: float = 0.25  ## Update stats display 4x per second instead of every frame
+const STATS_UPDATE_INTERVAL: float = 0.25  ## Update stats 4x per second instead of every frame
 
 ## Updates the unit stats display on a throttled timer.
 func _process(delta: float) -> void:

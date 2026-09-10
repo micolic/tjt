@@ -40,7 +40,9 @@ func refresh() -> void:
 	visible = true
 	var stats: UnitStats = _unit.stats
 	_name_label.text = stats.name
-	_health_label.text = "HP: %d / %d" % [ceili(maxf(_unit.current_health, 0.0)), stats.get_max_health()]
+	_health_label.text = "HP: %d / %d" % [
+		ceili(maxf(_unit.current_health, 0.0)),
+		stats.get_max_health()]
 	_mana_label.text = "MP: %d / %d" % [floori(maxf(_unit.current_mana, 0.0)), stats.max_mana]
 	_damage_label.text = "DMG: %.0f" % _unit.damage_dealt
 	_attack_label.text = "ATK: %d" % stats.get_attack_damage()
@@ -90,7 +92,9 @@ func _on_damage_dealt_changed(_new_damage: float) -> void:
 func _refresh_values() -> void:
 	if not is_instance_valid(_unit) or not _unit.stats:
 		return
-	_health_label.text = "HP: %d / %d" % [ceili(maxf(_unit.current_health, 0.0)), _unit.stats.get_max_health()]
+	_health_label.text = "HP: %d / %d" % [
+		ceili(maxf(_unit.current_health, 0.0)),
+		_unit.stats.get_max_health()]
 	_mana_label.text = "MP: %d / %d" % [floori(maxf(_unit.current_mana, 0.0)), _unit.stats.max_mana]
 	_damage_label.text = "DMG: %.0f" % _unit.damage_dealt
 

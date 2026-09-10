@@ -112,7 +112,8 @@ func _process(delta: float) -> void:
 
 	# Y-sort: units lower on screen render on top for depth illusion
 	# Only update when position changes AND unit is not highlighted (highlight sets z_index=4096)
-	if not ("is_hovered" in unit and unit.is_hovered) and not ("is_selected" in unit and unit.is_selected):
+	if not ("is_hovered" in unit and unit.is_hovered) \
+			and not ("is_selected" in unit and unit.is_selected):
 		var y_z: int = int(unit.global_position.y)
 		if y_z != unit.z_index:
 			unit.z_index = y_z
@@ -123,7 +124,8 @@ func _process(delta: float) -> void:
 
 	# Attempt attack if in range and cooldown ready
 	if current_target and is_instance_valid(current_target):
-		var distance_to_target: float = unit.global_position.distance_to(current_target.global_position)
+		var distance_to_target: float = unit.global_position.distance_to(
+				current_target.global_position)
 		var attack_range_pixels: float = unit.stats.attack_range * CELL_SIZE.x
 		
 		if distance_to_target <= attack_range_pixels and attack_timer <= 0:
@@ -140,7 +142,7 @@ func _process(delta: float) -> void:
 			or unit.stats.team == UnitStats.Team.ENEMY
 			or current_target.has_meta("is_idle_seek")
 		):
-			# King is a stationary ranged defender: never move toward targets, just attack when in range
+			# King is a stationary ranged defender: never moves, attacks in range
 			if unit.stats and unit.stats.is_king:
 				if _animator:
 					_animator.play(UnitAnimator.AnimState.IDLE)
@@ -158,7 +160,11 @@ func _process(delta: float) -> void:
 				var alt_target = _find_alternate_target()
 				if alt_target and alt_target != current_target:
 					if DEBUG_AI:
-						print("[AI] %s: 🔀 stuck for %.1fs, switching %s → %s" % [unit.stats.name, _stuck_timer, _get_target_name(current_target), _get_target_name(alt_target)])
+						print("[AI] %s: 🔀 stuck for %.1fs, switching %s → %s" % [
+							unit.stats.name,
+							_stuck_timer,
+							_get_target_name(current_target),
+							_get_target_name(alt_target)])
 					_switch_target(alt_target)
 					_stuck_timer = 0.0
 					_last_distance_to_target = INF
@@ -178,7 +184,10 @@ func _process(delta: float) -> void:
 					if DEBUG_AI:
 						var old_name = _get_target_name(current_target)
 						var new_name = _get_target_name(nearby)
-						print("[AI] %s: 🛑 enemy in range! switching %s → %s (won't walk through)" % [unit.stats.name, old_name, new_name])
+						print("[AI] %s: 🛑 enemy in range! switching %s → %s" % [
+							unit.stats.name,
+							old_name,
+							new_name])
 					_switch_target(nearby)
 					return  # Don't move this frame — attack next frame
 			
@@ -202,7 +211,11 @@ func _process(delta: float) -> void:
 					_animator.play(UnitAnimator.AnimState.WALK)
 				if DEBUG_AI_VERBOSE and update_timer <= 0:
 					var target_name = _get_target_name(current_target)
-					print("[AI] %s: moving → %s (dist=%.0fpx, range=%.0fpx)" % [unit.stats.name, target_name, distance_to_target, attack_range_pixels])
+					print("[AI] %s: moving → %s (dist=%.0fpx, range=%.0fpx)" % [
+						unit.stats.name,
+						target_name,
+						distance_to_target,
+						attack_range_pixels])
 	else:
 		# No valid target — idle
 		if _animator:
@@ -218,7 +231,8 @@ func _update_ai() -> void:
 
 	# ── Step 1: Target stickiness ──
 	# If current target is alive, valid, and in aggro range, keep it.
-	if current_target and is_instance_valid(current_target) and not current_target.has_meta("is_dummy_target"):
+	if current_target and is_instance_valid(current_target) \
+			and not current_target.has_meta("is_dummy_target"):
 		# Read the correct HP: Unit (allies) use current_health, EnemyUnit uses stats.health
 		var target_hp: float = 0.0
 		if "current_health" in current_target:
@@ -231,24 +245,36 @@ func _update_ai() -> void:
 				# ── Step 1b: Even if sticky, if an enemy is in ATTACK range, prefer it ──
 				# This prevents a melee unit from ignoring a touching enemy
 				var attack_range_pixels: float = unit.stats.attack_range * CELL_SIZE.x
-				var dist_to_current: float = unit.global_position.distance_to(current_target.global_position)
+				var dist_to_current: float = unit.global_position.distance_to(
+						current_target.global_position)
 				if dist_to_current <= attack_range_pixels:
 					return  # Current target is in attack range — definitely keep
 				# Current target alive but far — check if something closer is in attack range
 				var nearby: Node = _find_enemy_in_attack_range()
 				if nearby and nearby != current_target:
 					if DEBUG_TARGETING:
-						var nearby_dist: float = unit.global_position.distance_to(nearby.global_position)
-						print("[TGT] %s: STICKY OVERRIDE — %s in atk range (dist=%.0fpx), old %s was %.0fpx away" % [unit.stats.name, _get_target_name(nearby), nearby_dist, _get_target_name(current_target), dist_to_current])
+						var nearby_dist: float = unit.global_position.distance_to(
+								nearby.global_position)
+						print("[TGT] %s: STICKY OVERRIDE — %s in range (%.0fpx), old %s %.0fpx" % [
+							unit.stats.name, _get_target_name(nearby), nearby_dist,
+							_get_target_name(current_target), dist_to_current])
 					if DEBUG_AI:
-						print("[AI] %s: 🔄 closer enemy in attack range: %s → %s" % [unit.stats.name, _get_target_name(current_target), _get_target_name(nearby)])
+						print("[AI] %s: 🔄 closer enemy in attack range: %s → %s" % [
+							unit.stats.name,
+							_get_target_name(current_target),
+							_get_target_name(nearby)])
 					_switch_target(nearby)
 					return
 				return  # Keep current target
 			else:
 				if DEBUG_TARGETING:
-					var dist_to_current2: float = unit.global_position.distance_to(current_target.global_position)
-					print("[TGT] %s: STICKY BROKEN — %s left aggro range (dist=%.0fpx, aggro=%.0fpx)" % [unit.stats.name, _get_target_name(current_target), dist_to_current2, aggro_range_pixels])
+					var dist_to_current2: float = unit.global_position.distance_to(
+							current_target.global_position)
+					print("[TGT] %s: STICKY BROKEN — %s out of aggro (%.0f > %.0f)" % [
+						unit.stats.name,
+						_get_target_name(current_target),
+						dist_to_current2,
+						aggro_range_pixels])
 		else:
 			if DEBUG_TARGETING:
 				var hp_log: float = 0.0
@@ -256,13 +282,19 @@ func _update_ai() -> void:
 					hp_log = current_target.current_health
 				elif "stats" in current_target and current_target.stats:
 					hp_log = current_target.stats.health
-				print("[TGT] %s: STICKY BROKEN — %s is dead (hp=%.0f)" % [unit.stats.name, _get_target_name(current_target), hp_log])
+				print("[TGT] %s: STICKY BROKEN — %s is dead (hp=%.0f)" % [
+					unit.stats.name,
+					_get_target_name(current_target),
+					hp_log])
 
 	# ── Step 2: Respect target lock delay ──
 	if _target_lock_timer > 0 and current_target and is_instance_valid(current_target):
 		if not current_target.has_meta("is_dummy_target"):
 			if DEBUG_TARGETING:
-				print("[TGT] %s: LOCK active (%.1fs left), keeping %s" % [unit.stats.name, _target_lock_timer, _get_target_name(current_target)])
+				print("[TGT] %s: LOCK active (%.1fs left), keeping %s" % [
+					unit.stats.name,
+					_target_lock_timer,
+					_get_target_name(current_target)])
 			return  # Still locked
 
 	# ── Step 3: Find new target ──
@@ -282,16 +314,26 @@ func _update_ai() -> void:
 			var closest_enemy_dist := INF
 			for e in get_tree().get_nodes_in_group("enemy_units"):
 				if is_instance_valid(e):
-					closest_enemy_dist = minf(closest_enemy_dist, unit.global_position.distance_to(e.global_position))
-			var y_mult: float = AGGRO_Y_MULTIPLIER_COMBAT if _is_any_ally_in_combat() else AGGRO_Y_MULTIPLIER_IDLE
+					closest_enemy_dist = minf(
+							closest_enemy_dist,
+							unit.global_position.distance_to(e.global_position))
+			var y_mult: float = AGGRO_Y_MULTIPLIER_COMBAT if _is_any_ally_in_combat() \
+					else AGGRO_Y_MULTIPLIER_IDLE
 			var mode: String = "COMBAT" if _is_any_ally_in_combat() else "IDLE"
-			print("[AI] %s: ⚠ IDLE — no target (aggro=%.0fpx×X%.1f/Y%.1f [%s], nearest=%.0fpx)" % [unit.stats.name, aggro_px, AGGRO_X_MULTIPLIER, y_mult, mode, closest_enemy_dist])
+			print("[AI] %s: ⚠ IDLE — no target (aggro=%.0fpx×X%.1f/Y%.1f [%s], nearest=%.0fpx)" % [
+				unit.stats.name,
+				aggro_px,
+				AGGRO_X_MULTIPLIER,
+				y_mult,
+				mode,
+				closest_enemy_dist])
 			_idle_log_timer = 3.0  # Only log every 3 seconds
 	
 	# For enemy units with no target, walk toward King / player base
 	if not new_target and unit.stats.team == UnitStats.Team.ENEMY:
 		# Reuse existing dummy (avoids recreating every cycle)
-		if current_target and is_instance_valid(current_target) and current_target.has_meta("is_dummy_target"):
+		if current_target and is_instance_valid(current_target) \
+				and current_target.has_meta("is_dummy_target"):
 			var king = _find_king_unit()
 			if king:
 				current_target.global_position = king.global_position
@@ -302,7 +344,9 @@ func _update_ai() -> void:
 	
 	# ── Step 4: Apply target change ──
 	if current_target != new_target:
-		var old_is_dummy: bool = current_target != null and is_instance_valid(current_target) and current_target.has_meta("is_dummy_target")
+		var old_is_dummy: bool = current_target != null \
+				and is_instance_valid(current_target) \
+				and current_target.has_meta("is_dummy_target")
 		var new_is_dummy: bool = new_target != null and new_target.has_meta("is_dummy_target")
 		
 		var reason = ""
@@ -329,10 +373,18 @@ func _update_ai() -> void:
 			var dist_old := ""
 			var dist_new := ""
 			if current_target and is_instance_valid(current_target) and not old_is_dummy:
-				dist_old = " old_dist=%.0fpx" % unit.global_position.distance_to(current_target.global_position)
+				dist_old = " old_dist=%.0fpx" % unit.global_position.distance_to(
+						current_target.global_position)
 			if new_target and is_instance_valid(new_target) and not new_is_dummy:
-				dist_new = " new_dist=%.0fpx" % unit.global_position.distance_to(new_target.global_position)
-			print("[TGT] %s: SWITCH %s → %s (%s%s%s)" % [unit.stats.name, old_name, new_name, reason, dist_old, dist_new])
+				dist_new = " new_dist=%.0fpx" % unit.global_position.distance_to(
+						new_target.global_position)
+			print("[TGT] %s: SWITCH %s → %s (%s%s%s)" % [
+				unit.stats.name,
+				old_name,
+				new_name,
+				reason,
+				dist_old,
+				dist_new])
 		
 		if DEBUG_AI and not (old_is_dummy and new_is_dummy):
 			var old_name2 = _get_target_name(current_target)
@@ -341,7 +393,12 @@ func _update_ai() -> void:
 			if new_target and is_instance_valid(new_target):
 				var d: float = unit.global_position.distance_to(new_target.global_position)
 				dist_info = " [dist=%.0fpx]" % d
-			print("[AI] %s: target changed %s → %s (%s)%s" % [unit.stats.name, old_name2, new_name2, reason, dist_info])
+			print("[AI] %s: target changed %s → %s (%s)%s" % [
+				unit.stats.name,
+				old_name2,
+				new_name2,
+				reason,
+				dist_info])
 		
 		_switch_target(new_target)
 
@@ -351,7 +408,8 @@ func notify_attacked_by(attacker: Node) -> void:
 	if not is_instance_valid(attacker) or not enabled:
 		return
 	# Already have a real, alive target — don't switch
-	if current_target and is_instance_valid(current_target) and not current_target.has_meta("is_dummy_target"):
+	if current_target and is_instance_valid(current_target) \
+			and not current_target.has_meta("is_dummy_target"):
 		var target_hp: float = 0.0
 		if "current_health" in current_target:
 			target_hp = current_target.current_health
@@ -361,18 +419,22 @@ func notify_attacked_by(attacker: Node) -> void:
 			return
 	# Retaliate: target the attacker
 	if DEBUG_TARGETING:
-		print("[TGT] %s: RETALIATE → %s (no alive target, attacked by ranged)" % [unit.stats.name, _get_target_name(attacker)])
+		print("[TGT] %s: RETALIATE → %s (no alive target, attacked by ranged)" % [
+			unit.stats.name,
+			_get_target_name(attacker)])
 	_switch_target(attacker)
 
 
 ## ── Helper: switch current target and clean up ──
 func _switch_target(new_target) -> void:
-	if current_target and is_instance_valid(current_target) and current_target.has_meta("is_dummy_target"):
+	if current_target and is_instance_valid(current_target) \
+			and current_target.has_meta("is_dummy_target"):
 		current_target.queue_free()
 	current_target = new_target
 	_stuck_timer = 0.0
 	_last_distance_to_target = INF
-	var is_dummy: bool = new_target != null and new_target.has_meta("is_dummy_target") if new_target else false
+	var is_dummy: bool = new_target != null and new_target.has_meta("is_dummy_target") \
+			if new_target else false
 	if new_target and not is_dummy:
 		_target_lock_timer = TARGET_SWITCH_DELAY
 
@@ -389,7 +451,9 @@ func _find_enemy_in_attack_range() -> Node:
 	for enemy in enemies:
 		if not is_instance_valid(enemy) or enemy == unit:
 			continue
-		var ehp: float = enemy.current_health if "current_health" in enemy else (enemy.stats.health if "stats" in enemy and enemy.stats else 0.0)
+		var ehp: float = enemy.current_health\
+				if "current_health" in enemy\
+				else (enemy.stats.health if "stats" in enemy and enemy.stats else 0.0)
 		if ehp <= 0:
 			continue
 		var dist: float = unit.global_position.distance_to(enemy.global_position)
@@ -419,7 +483,9 @@ func _find_alternate_target() -> Node:
 			continue
 		if enemy == current_target:
 			continue  # Skip current target (we're stuck on it)
-		var ehp2: float = enemy.current_health if "current_health" in enemy else (enemy.stats.health if "stats" in enemy and enemy.stats else 0.0)
+		var ehp2: float = enemy.current_health\
+				if "current_health" in enemy\
+				else (enemy.stats.health if "stats" in enemy and enemy.stats else 0.0)
 		if ehp2 <= 0:
 			continue
 		if not _is_in_aggro_range(enemy.global_position, aggro_range_pixels):
@@ -439,7 +505,8 @@ func _find_alternate_target() -> Node:
 				# Is this ally anchored (fighting)?
 				var ally_ai = ally.get_node_or_null("UnitAI")
 				if ally_ai and ally_ai.current_target and is_instance_valid(ally_ai.current_target):
-					var ally_d: float = ally.global_position.distance_to(ally_ai.current_target.global_position)
+					var ally_d: float = ally.global_position.distance_to(
+							ally_ai.current_target.global_position)
 					var ally_range: float = ally.stats.attack_range * CELL_SIZE.x
 					if ally_d <= ally_range:
 						blocked = true
@@ -473,7 +540,9 @@ func _find_blocker_in_path() -> Node:
 	for ally in allies:
 		if not is_instance_valid(ally) or ally == unit or ally == current_target:
 			continue
-		var ahp: float = ally.current_health if "current_health" in ally else (ally.stats.health if "stats" in ally and ally.stats else 0.0)
+		var ahp: float = ally.current_health\
+				if "current_health" in ally\
+				else (ally.stats.health if "stats" in ally and ally.stats else 0.0)
 		if ahp <= 0:
 			continue
 		var to_ally: Vector2 = ally.global_position - unit.global_position
@@ -502,8 +571,8 @@ func _get_target_name(target) -> String:
 
 ## Aggro shape multipliers — wider X for the expanded 18-tile-wide arena.
 const AGGRO_X_MULTIPLIER := 2.5  ## Horizontal aggro = aggro_range × 2.5
-const AGGRO_Y_MULTIPLIER_IDLE := 1.0  ## Y aggro before any ally is fighting (wait for enemies to come)
-const AGGRO_Y_MULTIPLIER_COMBAT := 3.0  ## Y aggro once at least one ally engages (back-row joins in)
+const AGGRO_Y_MULTIPLIER_IDLE := 1.0  ## Y aggro before any ally is fighting
+const AGGRO_Y_MULTIPLIER_COMBAT := 3.0  ## Y aggro once an ally engages (back-row joins)
 
 
 ## Returns true if at least one PLAYER unit is currently in attack range of its target.
@@ -514,7 +583,8 @@ func _is_any_ally_in_combat() -> bool:
 		if not is_instance_valid(ally) or ally == unit:
 			continue
 		var ai = ally.get_node_or_null("UnitAI")
-		if not ai or not ai.enabled or not ai.current_target or not is_instance_valid(ai.current_target):
+		if not ai or not ai.enabled or not ai.current_target \
+				or not is_instance_valid(ai.current_target):
 			continue
 		if ai.current_target.has_meta("is_dummy_target"):
 			continue
@@ -533,7 +603,8 @@ func _is_in_aggro_range(enemy_pos: Vector2, aggro_range_px: float) -> bool:
 	if unit.stats.team == UnitStats.Team.PLAYER:
 		var dx: float = absf(unit.global_position.x - enemy_pos.x)
 		var dy: float = absf(unit.global_position.y - enemy_pos.y)
-		var y_mult: float = AGGRO_Y_MULTIPLIER_COMBAT if _is_any_ally_in_combat() else AGGRO_Y_MULTIPLIER_IDLE
+		var y_mult: float = AGGRO_Y_MULTIPLIER_COMBAT if _is_any_ally_in_combat() \
+				else AGGRO_Y_MULTIPLIER_IDLE
 		return dx <= aggro_range_px * AGGRO_X_MULTIPLIER and dy <= aggro_range_px * y_mult
 	else:
 		var distance: float = unit.global_position.distance_to(enemy_pos)
@@ -594,24 +665,38 @@ func _find_nearest_enemy():
 			if DEBUG_TARGETING:
 				var ename = _get_target_name(enemy)
 				var overkill_tag = " OVERKILL" if eff_hp <= 0.0 else ""
-				_tgt_candidates.append("%s(d=%.0f,effHP=%.0f%s)" % [ename, distance, eff_hp, overkill_tag])
+				_tgt_candidates.append("%s(d=%.0f,effHP=%.0f%s)" % [
+					ename, distance, eff_hp, overkill_tag])
 
 	# If every in-range enemy is overkilled on paper, still pick nearest
 	if not nearest and fallback_nearest:
 		nearest = fallback_nearest
 		nearest_distance = fallback_distance
 		if DEBUG_TARGETING:
-			print("[TGT] %s: all candidates overkilled, fallback → %s" % [unit.stats.name, _get_target_name(fallback_nearest)])
+			print("[TGT] %s: all candidates overkilled, fallback → %s" % [
+				unit.stats.name,
+				_get_target_name(fallback_nearest)])
 
 	if DEBUG_TARGETING and _tgt_candidates.size() > 0:
 		var winner_name = _get_target_name(nearest) if nearest else "NONE"
-		print("[TGT] %s: _find_nearest → %s | candidates: %s" % [unit.stats.name, winner_name, ", ".join(_tgt_candidates)])
+		print("[TGT] %s: _find_nearest → %s | candidates: %s" % [
+			unit.stats.name,
+			winner_name,
+			", ".join(_tgt_candidates)])
 
 	if DEBUG_AI_VERBOSE:
 		if nearest and "stats" in nearest and nearest.stats:
-			print("[AI] %s: found target %s (dist=%.0fpx, aggro=%.0fpx, enemies=%d)" % [unit.stats.name, nearest.stats.name, nearest_distance, aggro_range_pixels, enemies.size()])
+			print("[AI] %s: found target %s (dist=%.0fpx, aggro=%.0fpx, enemies=%d)" % [
+				unit.stats.name,
+				nearest.stats.name,
+				nearest_distance,
+				aggro_range_pixels,
+				enemies.size()])
 		else:
-			print("[AI] %s: no enemy within aggro range %.0fpx (enemies=%d)" % [unit.stats.name, aggro_range_pixels, enemies.size()])
+			print("[AI] %s: no enemy within aggro range %.0fpx (enemies=%d)" % [
+				unit.stats.name,
+				aggro_range_pixels,
+				enemies.size()])
 
 	return nearest
 
@@ -769,7 +854,12 @@ func _perform_attack(target) -> void:
 
 	if DEBUG_AI:
 		var target_hp = target.current_health if "current_health" in target else target.stats.health
-		print("[AI] %s: ⚔ attacks %s for %d dmg (target HP: %d → %d)" % [unit.stats.name, target.stats.name, damage, int(target_hp), int(max(target_hp - damage, 0))])
+		print("[AI] %s: ⚔ attacks %s for %d dmg (target HP: %d → %d)" % [
+			unit.stats.name,
+			target.stats.name,
+			damage,
+			int(target_hp),
+			int(max(target_hp - damage, 0))])
 
 	# Register incoming damage so other units don't overkill this target
 	if "incoming_damage" in target:
@@ -921,7 +1011,8 @@ func _find_path(start: Vector2i, goal: Vector2i) -> Array[Vector2i]:
 			var neighbor: Vector2i = current + dir
 
 			# Bounds check
-			if neighbor.x < 0 or neighbor.y < 0 or neighbor.x >= grid_size.x or neighbor.y >= grid_size.y:
+			if neighbor.x < 0 or neighbor.y < 0 \
+					or neighbor.x >= grid_size.x or neighbor.y >= grid_size.y:
 				continue
 
 			# Already evaluated
@@ -930,7 +1021,8 @@ func _find_path(start: Vector2i, goal: Vector2i) -> Array[Vector2i]:
 
 			# Occupied check (skip goal tile — we want to path TO it even if occupied by enemy)
 			if neighbor != clamped_goal:
-				if play_area.unit_grid.units.has(neighbor) and play_area.unit_grid.is_tile_occupied(neighbor):
+				if play_area.unit_grid.units.has(neighbor) \
+						and play_area.unit_grid.is_tile_occupied(neighbor):
 					continue
 
 			var tentative_g: int = g_score[current] + 1
@@ -1017,7 +1109,8 @@ func _apply_avoidance_steering(desired_dir: Vector2) -> Vector2:
 			var other_ai = other_unit.get_node_or_null("UnitAI")
 			var other_anchored := false
 			if other_ai and other_ai.current_target and is_instance_valid(other_ai.current_target):
-				var other_dist_to_target: float = other_unit.global_position.distance_to(other_ai.current_target.global_position)
+				var other_dist_to_target: float = other_unit.global_position \
+						.distance_to(other_ai.current_target.global_position)
 				var other_attack_range: float = other_unit.stats.attack_range * CELL_SIZE.x
 				other_anchored = other_dist_to_target <= other_attack_range
 			# Anchored teammates are hard obstacles — steer much more aggressively
@@ -1172,7 +1265,8 @@ func _apply_separation(delta: float) -> void:
 
 	# ── Anchored check: if this unit is within attack range AND attacking, skip separation ──
 	# This prevents fighting units from being shoved by teammates walking up behind them.
-	if current_target and is_instance_valid(current_target) and not current_target.has_meta("is_dummy_target"):
+	if current_target and is_instance_valid(current_target) \
+			and not current_target.has_meta("is_dummy_target"):
 		var dist_to_target: float = unit.global_position.distance_to(current_target.global_position)
 		var attack_range_px: float = unit.stats.attack_range * CELL_SIZE.x
 		if dist_to_target <= attack_range_px:
@@ -1237,7 +1331,8 @@ func _check_leak_to_king() -> void:
 	# so both fight each other through normal combat (no instant leak).
 	if dist_to_king <= CELL_SIZE.x * 2.0:
 		# Switch from dummy target to the actual King node
-		if current_target == null or not is_instance_valid(current_target) or current_target.has_meta("is_dummy_target"):
+		if current_target == null or not is_instance_valid(current_target) \
+				or current_target.has_meta("is_dummy_target"):
 			_switch_target(king)
 			if DEBUG_AI:
 				print("[AI] %s: 👑 reached King's pit — engaging King in combat" % unit.stats.name)

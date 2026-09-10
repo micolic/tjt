@@ -89,7 +89,8 @@ func get_unit_anchor(unit: Node) -> Vector2i:
 ## Returns true if every cell of a footprint anchored at `anchor` is free and in bounds.
 ## `ignore` (optional) treats cells occupied by that unit as free (for move/swap checks).
 func is_area_free(anchor: Vector2i, footprint: Vector2i, ignore: Node = null) -> bool:
-	if anchor.x < 0 or anchor.y < 0 or anchor.x + footprint.x > size.x or anchor.y + footprint.y > size.y:
+	if anchor.x < 0 or anchor.y < 0 \
+			or anchor.x + footprint.x > size.x or anchor.y + footprint.y > size.y:
 		return false
 	for x in range(anchor.x, anchor.x + footprint.x):
 		for y in range(anchor.y, anchor.y + footprint.y):

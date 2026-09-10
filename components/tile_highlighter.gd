@@ -122,6 +122,3 @@ func _update_highlight(anchor: Vector2i) -> void:
 	_border.points = points
 	_set_visible(true)
 
-	print("[TileHighlighter] anchor: %s footprint: %s -> px (%.0f, %.0f, %.0f, %.0f)" % [
-		anchor, footprint, x, y, w, h
-	])

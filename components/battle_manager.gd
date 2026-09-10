@@ -144,7 +144,6 @@ func check_win_condition() -> void:
 				break
 	
 	if not king_alive:
-		print("[Battle] 👑 The King has fallen!")
 		end_battle(UnitStats.Team.ENEMY)
 		return
 	

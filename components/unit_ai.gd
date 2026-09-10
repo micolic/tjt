@@ -12,6 +12,8 @@ const DEBUG_AI: bool = false
 const DEBUG_AI_VERBOSE: bool = false
 ## Toggle targeting-specific debug (shows WHY targets are picked/switched)
 const DEBUG_TARGETING: bool = false
+## Toggle movement/occupancy debug (blocked directions, boxed-in units)
+const DEBUG_MOVE: bool = false
 
 const CELL_SIZE := Vector2(32, 32)
 
@@ -42,7 +44,10 @@ var play_area: PlayArea
 var enemy_area: PlayArea
 var navigation_agent: NavigationAgent2D
 var _battle_manager: Node  ## Cached BattleManager reference
+var _arena: Node  ## Cached Arena reference (holds battle_occupancy map)
+var _occ_cells: Array[Vector2i] = []  ## 32px tiles this unit currently occupies
 var _idle_log_timer: float = 0.0  ## Throttle IDLE log spam
+var _move_log_timer: float = 0.0  ## Throttle [MOVE] log spam
 var _animator: UnitAnimator  ## Cached animator reference
 
 
@@ -82,6 +87,9 @@ func _process(delta: float) -> void:
 	if update_timer <= 0:
 		update_timer = update_interval
 		_update_ai()
+
+	# Register our tiles in the shared battle occupancy map
+	_update_occupancy()
 	
 	# Update attack cooldown
 	if attack_timer > 0:
@@ -94,7 +102,11 @@ func _process(delta: float) -> void:
 	# Update idle log throttle
 	if _idle_log_timer > 0:
 		_idle_log_timer -= delta
-	
+
+	# Update movement log throttle
+	if _move_log_timer > 0:
+		_move_log_timer -= delta
+
 	# Separation logic — gentle push between same-team units only
 	_apply_separation(delta)
 
@@ -123,7 +135,11 @@ func _process(delta: float) -> void:
 			# In range but on cooldown — idle
 			if _animator:
 				_animator.play(UnitAnimator.AnimState.IDLE)
-		elif distance_to_target > attack_range_pixels and (not current_target.has_meta("is_dummy_target") or unit.stats.team == UnitStats.Team.ENEMY):
+		elif distance_to_target > attack_range_pixels and (
+			not current_target.has_meta("is_dummy_target")
+			or unit.stats.team == UnitStats.Team.ENEMY
+			or current_target.has_meta("is_idle_seek")
+		):
 			# King is a stationary ranged defender: never move toward targets, just attack when in range
 			if unit.stats and unit.stats.is_king:
 				if _animator:
@@ -166,7 +182,8 @@ func _process(delta: float) -> void:
 					_switch_target(nearby)
 					return  # Don't move this frame — attack next frame
 			
-			# Move toward target with avoidance steering
+			# Move toward target — probe the shared occupancy map so the unit
+			# slides around teammates (or holds) instead of pushing into a wall.
 			var desired_dir: Vector2
 			if navigation_agent:
 				navigation_agent.target_position = current_target.global_position
@@ -174,16 +191,18 @@ func _process(delta: float) -> void:
 				desired_dir = (next_position - unit.global_position).normalized()
 			else:
 				desired_dir = (current_target.global_position - unit.global_position).normalized()
-			# Steer around same-team units blocking the path
-			var steered_dir: Vector2 = _apply_avoidance_steering(desired_dir)
-			var distance_to_move: float = movement_speed * delta
-			unit.global_position += steered_dir * distance_to_move
-			# Animate walk
-			if _animator:
-				_animator.play(UnitAnimator.AnimState.WALK)
-			if DEBUG_AI_VERBOSE and update_timer <= 0:
-				var target_name = _get_target_name(current_target)
-				print("[AI] %s: moving → %s (dist=%.0fpx, range=%.0fpx)" % [unit.stats.name, target_name, distance_to_target, attack_range_pixels])
+			var move_dir: Vector2 = _resolve_passable_direction(desired_dir)
+			if move_dir == Vector2.ZERO:
+				# Boxed in — hold; the stuck timer will try another target
+				if _animator:
+					_animator.play(UnitAnimator.AnimState.IDLE)
+			else:
+				unit.global_position += move_dir * movement_speed * delta
+				if _animator:
+					_animator.play(UnitAnimator.AnimState.WALK)
+				if DEBUG_AI_VERBOSE and update_timer <= 0:
+					var target_name = _get_target_name(current_target)
+					print("[AI] %s: moving → %s (dist=%.0fpx, range=%.0fpx)" % [unit.stats.name, target_name, distance_to_target, attack_range_pixels])
 	else:
 		# No valid target — idle
 		if _animator:
@@ -248,7 +267,13 @@ func _update_ai() -> void:
 
 	# ── Step 3: Find new target ──
 	var new_target = _find_nearest_enemy()
-	
+
+	# ── Step 3b: Respond to aggro — allies never roam toward enemies on their
+	# own. The only idle movement is toward an enemy that already has aggro on
+	# this unit (e.g. a ranged attacker firing from outside our aggro range).
+	if not new_target and unit.stats.team == UnitStats.Team.PLAYER:
+		new_target = _find_idle_seek_target()
+
 	# Log idle allies during battle — throttled to every 3s to reduce spam
 	if not new_target and unit.stats.team == UnitStats.Team.PLAYER:
 		var aggro_px: float = unit.stats.aggro_range * CELL_SIZE.x
@@ -589,6 +614,56 @@ func _find_nearest_enemy():
 			print("[AI] %s: no enemy within aggro range %.0fpx (enemies=%d)" % [unit.stats.name, aggro_range_pixels, enemies.size()])
 
 	return nearest
+
+
+## Idle seek: allies are static defenders — they never roam toward the nearest
+## enemy. The only idle movement is responding to an enemy that already has
+## aggro on this unit (its UnitAI is targeting us, e.g. a ranged attacker).
+## Returns a dummy Node2D tracking that enemy's position so the unit walks
+## toward it. Reuses an existing dummy if present, frees it when nothing
+## targets us anymore.
+func _find_idle_seek_target():
+	var target_enemy = _find_enemy_targeting_me()
+	if not target_enemy:
+		# Nothing is aggroed on us — drop an existing seek dummy and stay idle
+		if current_target and is_instance_valid(current_target) \
+				and current_target.has_meta("is_idle_seek"):
+			current_target.queue_free()
+			current_target = null
+		return null
+
+	# Reuse the existing dummy — just refresh its position to track the enemy
+	if current_target and is_instance_valid(current_target) \
+			and current_target.has_meta("is_idle_seek"):
+		current_target.global_position = target_enemy.global_position
+		return current_target
+
+	var seek_dummy := Node2D.new()
+	seek_dummy.global_position = target_enemy.global_position
+	seek_dummy.set_meta("is_dummy_target", true)
+	seek_dummy.set_meta("is_idle_seek", true)
+	unit.get_tree().current_scene.add_child(seek_dummy)
+	if DEBUG_AI:
+		print("[AI] %s: 🧭 AGGRO RESPONSE → %s (dist=%.0fpx)" % [
+			unit.stats.name, _get_target_name(target_enemy),
+			unit.global_position.distance_to(target_enemy.global_position)
+		])
+	return seek_dummy
+
+
+## Finds an enemy whose UnitAI is targeting this unit.
+func _find_enemy_targeting_me():
+	if not unit.stats:
+		return null
+	var target_group: String = UnitStats.TARGET[unit.stats.team]
+	var enemies := get_tree().get_nodes_in_group(target_group)
+	for enemy in enemies:
+		if not is_instance_valid(enemy):
+			continue
+		var ai = enemy.get_node_or_null("UnitAI")
+		if ai and ai.current_target == unit:
+			return enemy
+	return null
 
 
 ## Returns a dummy target representing the player base for enemy units.
@@ -952,6 +1027,143 @@ func _apply_avoidance_steering(desired_dir: Vector2) -> Vector2:
 	return desired_dir
 
 
+## Occupancy granularity for battle movement — one visual tile.
+const MOVE_TILE_PX := 32.0
+
+## Registers this unit's tiles in the shared battle_occupancy map so other units
+## can check passability before moving instead of pushing into teammates.
+func _update_occupancy() -> void:
+	if not is_instance_valid(_arena):
+		_arena = get_tree().get_first_node_in_group("arena")
+		if not _arena:
+			return
+	var cells := _covered_cells(unit.global_position)
+	if cells == _occ_cells:
+		return
+	_remove_occupancy()
+	_occ_cells = cells
+	for c in cells:
+		if not _arena.battle_occupancy.has(c):
+			_arena.battle_occupancy[c] = [unit]
+		else:
+			_arena.battle_occupancy[c].append(unit)
+
+
+func _exit_tree() -> void:
+	_remove_occupancy()
+
+
+func _remove_occupancy() -> void:
+	if not is_instance_valid(_arena):
+		return
+	for c in _occ_cells:
+		if not _arena.battle_occupancy.has(c):
+			continue
+		var list: Array = _arena.battle_occupancy[c]
+		list.erase(unit)
+		if list.is_empty():
+			_arena.battle_occupancy.erase(c)
+	_occ_cells.clear()
+
+
+## All MOVE_TILE_PX tiles touched by the unit's visual box centered at `pos`.
+func _covered_cells(pos: Vector2) -> Array[Vector2i]:
+	var half: Vector2 = Vector2(unit.stats.tile_size) * 0.5 - Vector2.ONE
+	var tl := Vector2i(((pos - half) / MOVE_TILE_PX).floor())
+	var br := Vector2i(((pos + half) / MOVE_TILE_PX).floor())
+	var cells: Array[Vector2i] = []
+	for x in range(tl.x, br.x + 1):
+		for y in range(tl.y, br.y + 1):
+			cells.append(Vector2i(x, y))
+	return cells
+
+
+## Returns true if the unit's box at `pos` overlaps no HARD obstacle: only
+## same-team units that are "anchored" (fighting a real target in range) or the
+## King block movement. Moving teammates are soft — they stream past each other
+## and separation keeps spacing, so the wave flow never deadlocks on density.
+func _is_position_free(pos: Vector2) -> bool:
+	if not is_instance_valid(_arena):
+		return true
+	for c in _covered_cells(pos):
+		if not _arena.battle_occupancy.has(c):
+			continue
+		for o in _arena.battle_occupancy[c]:
+			if o == unit or not is_instance_valid(o) or not o.stats:
+				continue
+			if o.stats.team != unit.stats.team:
+				continue
+			if _is_hard_obstacle(o):
+				return false
+	return true
+
+
+## A unit is a hard obstacle when it is anchored: fighting a real target within
+## its attack range, or it is the King (units must never path through him).
+func _is_hard_obstacle(o: Node) -> bool:
+	if o.stats.is_king:
+		return true
+	var o_ai = o.get_node_or_null("UnitAI")
+	if not o_ai or not o_ai.current_target or not is_instance_valid(o_ai.current_target):
+		return false
+	if o_ai.current_target.has_meta("is_dummy_target"):
+		return false
+	var o_dist: float = o.global_position.distance_to(o_ai.current_target.global_position)
+	var o_range: float = o.stats.attack_range * CELL_SIZE.x
+	return o_dist <= o_range
+
+
+## Picks a passable movement direction: steered direction first, then wider
+## detours (±45°, ±90°, ±135°, reverse). Returns ZERO when boxed in — the unit
+## holds position and lets the stuck timer switch target instead of endlessly
+## pushing into teammates.
+func _resolve_passable_direction(desired: Vector2) -> Vector2:
+	if desired == Vector2.ZERO:
+		return Vector2.ZERO
+	var probe: float = MOVE_TILE_PX * 0.75
+	var steered: Vector2 = _apply_avoidance_steering(desired)
+	var dest: Vector2 = unit.global_position + steered * probe
+	if _is_position_free(dest):
+		return steered
+	if DEBUG_MOVE and _move_log_timer <= 0:
+		_move_log_timer = 1.0
+		print("[MOVE] %s steered=%s blocked by: %s" % [
+			unit.stats.name, steered, _describe_blockers(dest)])
+	for angle in [0.7854, -0.7854, 1.5708, -1.5708, 2.3562, -2.3562]:
+		var dir: Vector2 = desired.rotated(angle)
+		if _is_position_free(unit.global_position + dir * probe):
+			if DEBUG_MOVE and _move_log_timer <= 0:
+				_move_log_timer = 1.0
+				print("[MOVE] %s detour %.0fdeg → %s" % [
+					unit.stats.name, rad_to_deg(angle), dir])
+			return dir
+	if DEBUG_MOVE and _move_log_timer <= 0:
+		_move_log_timer = 1.0
+		print("[MOVE] %s BOXED at %s — all detours blocked by: %s" % [
+			unit.stats.name, unit.global_position,
+			_describe_blockers(unit.global_position)])
+	return Vector2.ZERO
+
+
+## Names of living same-team units occupying the tiles covered at `pos` (debug).
+## Anchored blockers are marked with *.
+func _describe_blockers(pos: Vector2) -> String:
+	if not is_instance_valid(_arena):
+		return "no-arena"
+	var names: Array[String] = []
+	for c in _covered_cells(pos):
+		if not _arena.battle_occupancy.has(c):
+			continue
+		for o in _arena.battle_occupancy[c]:
+			if o != unit and is_instance_valid(o) and o.stats \
+					and o.stats.team == unit.stats.team:
+				var n: String = "%s%s@%s" % [
+					_get_target_name(o), "*" if _is_hard_obstacle(o) else "", c]
+				if not names.has(n):
+					names.append(n)
+	return ", ".join(names) if names.size() > 0 else "none"
+
+
 ## Apply separation force to avoid unit overlap.
 ## Units actively attacking a target are "anchored" and resist being pushed.
 func _apply_separation(delta: float) -> void:
@@ -966,9 +1178,10 @@ func _apply_separation(delta: float) -> void:
 		if dist_to_target <= attack_range_px:
 			return  # Anchored — don't let teammates push us off our target
 
-	# Only apply light separation to prevent perfect overlap.
-	var min_distance: float = 20.0
-	var separation_force: float = 50.0
+	# Only apply separation to prevent perfect overlap.
+	# Use a distance close to the visual tile size (32px) so units don't stack.
+	var min_distance: float = 28.0
+	var separation_force: float = 120.0
 
 	var all_units = get_tree().get_nodes_in_group("units")
 	var separation_vector: Vector2 = Vector2.ZERO
@@ -983,8 +1196,15 @@ func _apply_separation(delta: float) -> void:
 			continue
 
 		var distance: float = unit.global_position.distance_to(other_unit.global_position)
-		if distance < min_distance and distance > 0.1:
-			var direction: Vector2 = (unit.global_position - other_unit.global_position).normalized()
+		if distance < min_distance:
+			# Perfect overlap has no separation direction — push deterministically
+			# by instance id so stacked units fan out instead of deadlocking.
+			var direction: Vector2
+			if distance > 0.1:
+				direction = (unit.global_position - other_unit.global_position).normalized()
+			else:
+				var ang: float = float(unit.get_instance_id() % 628) / 100.0
+				direction = Vector2(cos(ang), sin(ang))
 			var strength: float = 1.0 - (distance / min_distance)
 			separation_vector += direction * strength
 			neighbor_count += 1

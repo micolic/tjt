@@ -50,7 +50,6 @@ func execute(caster: Unit, targets: Array) -> void:
 	var arena: Node = caster.get_tree().get_first_node_in_group("arena")
 	if arena and arena.has_method("register_damage_output"):
 		arena.call_deferred("register_damage_output", _total_damage(hits))
-	print("[Ability] %s: %s chained through %d target(s)" % [caster.stats.name, ability_name, hits])
 	caster.flash_skin(Color.CHARTREUSE)
 
 

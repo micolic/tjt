@@ -31,7 +31,6 @@ var _upgrade_buttons: Array[Button] = []
 
 
 func _ready() -> void:
-	print("[SelectedUnitPanel] Initialized")
 	_connect_listeners()
 	visible = is_instance_valid(unit)
 	refresh()
@@ -59,8 +58,6 @@ func set_unit(new_unit: Unit) -> void:
 	_connect_listeners()
 	show()
 	refresh()
-	if is_instance_valid(unit) and unit.stats:
-		print("[SelectedUnitPanel] Selected %s" % unit.stats.name)
 
 
 func set_player_stats(stats: PlayerStats) -> void:
@@ -326,7 +323,6 @@ func _on_upgrade_pressed(source: WeakRef, target: UnitStats) -> void:
 	var stale: bool = not _has_valid_unit() or source.get_ref() != unit
 	stale = stale or not is_instance_valid(target) or not unit.stats.upgrades.has(target)
 	if stale:
-		print("[SelectedUnitPanel] Ignored stale upgrade request")
 		refresh()
 		return
 	var reason: String = _upgrade_block_reason()
@@ -334,12 +330,8 @@ func _on_upgrade_pressed(source: WeakRef, target: UnitStats) -> void:
 	if reason.is_empty() and _player_stats.gold < cost:
 		reason = "Not enough gold."
 	if not reason.is_empty():
-		print("[SelectedUnitPanel] Upgrade blocked: %s" % reason)
 		refresh()
 		return
-	print("[SelectedUnitPanel] Upgrade requested: %s -> %s (+%d gold)" % [
-		unit.stats.name, target.name, cost
-	])
 	upgrade_requested.emit(unit, target)
 
 
@@ -348,10 +340,8 @@ func _on_remove_pressed() -> void:
 		return
 	var reason: String = _removal_block_reason()
 	if not reason.is_empty():
-		print("[SelectedUnitPanel] Removal blocked: %s" % reason)
 		refresh()
 		return
-	print("[SelectedUnitPanel] Removal requested: %s" % unit.stats.name)
 	removal_requested.emit(unit)
 
 
@@ -388,11 +378,11 @@ func _removal_block_reason() -> String:
 func _request_deselection() -> void:
 	if not visible:
 		return
-	print("[SelectedUnitPanel] Deselection requested")
 	deselection_requested.emit()
 
 
 func _gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+	if event is InputEventMouseButton and event.pressed \
+			and event.button_index == MOUSE_BUTTON_RIGHT:
 		accept_event()
 		_request_deselection()

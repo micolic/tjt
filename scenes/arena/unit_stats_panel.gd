@@ -17,7 +17,6 @@ var _unit: Unit = null
 
 
 func _ready() -> void:
-	print("[UnitStatsPanel] Initialized")
 	refresh()
 
 

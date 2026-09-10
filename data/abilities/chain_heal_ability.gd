@@ -55,7 +55,6 @@ func execute(caster: Unit, targets: Array) -> void:
 		hops += 1
 		current_heal *= bounce_falloff
 
-	print("[Ability] %s: %s healed %d ally(ies)" % [caster.stats.name, ability_name, hops])
 	caster.flash_skin(Color.CYAN)
 
 

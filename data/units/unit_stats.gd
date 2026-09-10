@@ -55,12 +55,13 @@ const MAX_TIER := 7
 @export var skin_coordinates: Vector2i
 ## Size of the unit's visual sprite in pixels (e.g. 32x32, 16x16, 64x64).
 ## Used to center the unit on its placement tile and to slice the spritesheet correctly.
-@export var tile_size: Vector2i = Vector2i(32, 32)
+## Changing this auto-updates `footprint` to match (tile_size / GRID_CELL_PX).
+@export var tile_size: Vector2i = Vector2i(32, 32) : set = _set_tile_size
 ## Visual scale multiplier (e.g. 1.5 for King). Applied to the Visuals node.
 @export var visual_scale: float = 1.0
-## Placement footprint in logical grid cells (8 px each). Default 4x4 = 32 px — the
-## standard unit size. Smaller units (e.g. 2x2 = 16 px) and larger ones (8x8 = 64 px)
-## occupy proportionally fewer/more cells on the placement grid.
+## Placement footprint in logical grid cells (8 px each). Auto-calculated from
+## tile_size: footprint = ceil(tile_size / 8). A 32x32 sprite -> 4x4 cells (32 px),
+## a 64x64 sprite -> 8x8 cells (64 px). Can be overridden manually if needed.
 @export var footprint: Vector2i = Vector2i(4, 4)
 ## Optional SpriteFrames for animated units (idle, move, attack).
 ## When set, the unit will use AnimatedSprite2D instead of the static spritesheet.
@@ -170,6 +171,13 @@ func is_melee() -> bool:
 ## Sets the tier value and emits a changed signal for resource updates.
 func _set_tier(value: int) -> void:
 	tier = value
+	emit_changed()
+
+
+## Sets tile_size and auto-calculates footprint from it (ceil(tile_size / 8)).
+func _set_tile_size(value: Vector2i) -> void:
+	tile_size = value
+	footprint = Vector2i(ceili(value.x / 8.0), ceili(value.y / 8.0))
 	emit_changed()
 
 

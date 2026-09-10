@@ -74,11 +74,6 @@ func _move_unit(unit, play_area: PlayArea, anchor: Vector2i) -> void:
 	var footprint := UnitGrid.footprint_of(unit)
 	play_area.unit_grid.add_unit(anchor, unit)
 	unit.global_position = play_area.get_unit_position(anchor, footprint)
-	var skin_offset: Vector2 = unit.skin.offset if unit.skin is Sprite2D else Vector2.ZERO
-	var visual_tile := Vector2i(anchor.x / footprint.x, anchor.y / footprint.y)
-	print("[UnitMover] Moved %s to anchor %s visual_tile %s global_pos=%s skin.offset=%s" % [
-		unit.stats.name, anchor, visual_tile, unit.global_position, skin_offset
-	])
 	unit.reparent(play_area.unit_grid)
 
 ## Returns the snapped global position for a dragged unit based on the mouse tile.
@@ -93,17 +88,11 @@ func _snap_position_for(mouse_global: Vector2, unit) -> Vector2:
 	var anchor := _dragging_area.get_anchor_for_global(mouse_global, footprint)
 	if anchor != _last_snap_anchor:
 		_last_snap_anchor = anchor
-		print("[UnitMover] snap: mouse=%s anchor=%s footprint=%s" % [
-			mouse_global, anchor, footprint
-		])
 	return _dragging_area.get_unit_position(anchor, footprint)
 
 
 ## Handler for when a unit starts being dragged. Removes it from its old cells.
 func _on_unit_drag_started(unit) -> void:
-	print("[UnitMover] Drag started: %s at %s" % [
-		unit.stats.name, unit.global_position
-	])
 	var footprint := UnitGrid.footprint_of(unit)
 	_set_highlighters(true, footprint)
 	_last_snap_anchor = Vector2i(-1, -1)
@@ -126,9 +115,6 @@ func _on_unit_drag_canceled(starting_position: Vector2, unit) -> void:
 
 ## Handler for when a unit is dropped. Moves the unit or swaps if occupied.
 func _on_unit_dropped(starting_position: Vector2, unit) -> void:
-	print("[UnitMover] Dropped: %s start=%s current=%s" % [
-		unit.stats.name, starting_position, unit.global_position
-	])
 	unit.drag_and_drop.snap_position = Callable()
 	_dragging_area = null
 	_set_highlighters(false)

@@ -75,7 +75,6 @@ func _end_dragging() -> void:
 func _cancel_dragging() -> void:
 	_end_dragging()
 	drag_canceled.emit(starting_position)
-	print("[DragAndDrop] Drag canceled")
 
 
 ## Starts dragging, records the starting position, and emits drag_started.
@@ -89,14 +88,12 @@ func _start_dragging() -> void:
 	target.add_to_group("dragging")
 	target.z_index = 4096
 	drag_started.emit()
-	print("[DragAndDrop] Drag started")
 
 
 ## Ends dragging and emits the dropped signal.
 func _drop() -> void:
 	_end_dragging()
 	dropped.emit(starting_position)
-	print("[DragAndDrop] Unit dropped")
 	
 
 ## Handles input events on the target to start dragging if appropriate.

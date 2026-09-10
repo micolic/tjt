@@ -66,9 +66,7 @@ func _build_cards() -> void:
 func _on_card_clicked(unit_stats: UnitStats) -> void:
 	# Check gold
 	if player_stats and player_stats.gold < unit_stats.gold_cost:
-		print("[UnitSelectionPanel] Cannot select %s: not enough gold (%d < %d)" % [unit_stats.name, player_stats.gold, unit_stats.gold_cost])
 		return
-	print("[UnitSelectionPanel] Card clicked: %s (%d gold)" % [unit_stats.name, unit_stats.gold_cost])
 
 	# If clicking the same card again, deselect
 	var card = _cards.get(unit_stats.resource_path)
@@ -91,9 +89,7 @@ func _on_card_clicked(unit_stats: UnitStats) -> void:
 
 func _on_card_drag_started(unit_stats: UnitStats) -> void:
 	if player_stats and player_stats.gold < unit_stats.gold_cost:
-		print("[UnitSelectionPanel] Cannot drag %s: not enough gold (%d < %d)" % [unit_stats.name, player_stats.gold, unit_stats.gold_cost])
 		return
-	print("[UnitSelectionPanel] Card drag started: %s (%d gold)" % [unit_stats.name, unit_stats.gold_cost])
 	# Select the card visually
 	var card = _cards.get(unit_stats.resource_path)
 	if _selected_card and _selected_card != card:
@@ -111,20 +107,17 @@ func on_unit_placed(unit_stats: UnitStats = null) -> void:
 	# Deduct gold
 	if player_stats and unit_stats:
 		player_stats.gold -= unit_stats.gold_cost
-		print("[UnitSelectionPanel] Deducted %d gold for %s (gold now %d)" % [unit_stats.gold_cost, unit_stats.name, player_stats.gold])
 	_update_affordability()
 	# Keep selected for rapid multi-placement of same type
 	# (user can click multiple tiles to place more)
 	# Auto-cancel if can no longer afford the selected unit
 	if player_stats and _selected_stats and player_stats.gold < _selected_stats.gold_cost:
-		print("[UnitSelectionPanel] Cannot afford another %s; cancelling selection" % _selected_stats.name)
 		cancel_selection()
 
 
 ## Called by arena when a unit is removed from the field.
 func on_unit_removed() -> void:
 	deployed_count = max(0, deployed_count - 1)
-	print("[UnitSelectionPanel] Deployed count decreased to %d" % deployed_count)
 
 
 ## Deselect the current card and cancel placement mode.
@@ -133,7 +126,6 @@ func cancel_selection() -> void:
 		_selected_card.set_selected(false)
 		_selected_card = null
 	_selected_stats = null
-	print("[UnitSelectionPanel] Selection cancelled")
 	placement_cancelled.emit()
 
 

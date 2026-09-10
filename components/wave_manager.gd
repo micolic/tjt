@@ -171,11 +171,9 @@ func _on_battle_ended(winner: UnitStats.Team) -> void:
 func start_next_wave() -> void:
 	current_wave_index += 1
 	current_wave_number = current_wave_index + 1
-	print("[WAVE] Starting WAVE %d (index %d)" % [current_wave_number, current_wave_index])
 	
 	# Check if we've completed all waves
 	if current_wave_index >= waves.size():
-		print("[WAVE] !!! ALL WAVES COMPLETED !!!")
 		all_waves_completed.emit()
 		return
 	
@@ -236,19 +234,14 @@ func _spawn_wave(wave_config: WaveConfig) -> void:
 			var ai = spawned_unit.get_node_or_null("UnitAI")
 			if ai:
 				ai.enabled = true
-			if DEBUG_SPAWNS:
-				print("[WAVE]   Spawned #%d: %s (HP: %d) — walking" % [idx + 1, scaled_stats.name, int(scaled_stats.max_health)])
 		else:
 			remaining_enemies = max(remaining_enemies - 1, 0)
-			print("[WAVE]   WARNING: Failed to spawn enemy #%d" % (idx + 1))
 
 		# Wait between spawns (skip delay on last unit)
 		if idx < spawn_queue.size() - 1:
 			await get_tree().create_timer(spawn_interval).timeout
 
 
-
-const DEBUG_SPAWNS := true
 
 ## Spawns a single enemy at a random X along the top edge of the enemy area.
 ## Does NOT use the grid — the unit is free-moving from the start.
@@ -317,7 +310,6 @@ func _on_enemy_died(unit: Node) -> void:
 		# Already counted — avoid double-decrement
 		return
 	remaining_enemies = max(remaining_enemies - 1, 0)
-	print("[WAVE] Enemy died! Remaining: %d" % remaining_enemies)
 
 
 ## Returns the WaveConfig for the next upcoming wave, or null if none.
@@ -329,7 +321,6 @@ func get_next_wave_config() -> WaveConfig:
 
 
 func _complete_wave() -> void:
-	print("[WAVE] <<< WAVE %d COMPLETE >>>" % current_wave_number)
 	is_wave_active = false
 	wave_completed.emit(current_wave_number)
 	
@@ -342,7 +333,6 @@ func _complete_wave() -> void:
 		player_stats.gold += gold_reward
 		player_stats.xp += xp_reward
 		
-		print("[WAVE] 💰 REWARDS: +%d Gold, +%d XP" % [gold_reward, xp_reward])
 		wave_rewards_earned.emit(gold_reward, xp_reward)
 	
 	# Clean up any remaining dead/alive enemy units
@@ -359,7 +349,6 @@ func _complete_wave() -> void:
 	
 	# Check if all waves done
 	if current_wave_index + 1 >= waves.size():
-		print("[WAVE] !!! ALL WAVES COMPLETED !!!")
 		all_waves_completed.emit()
 		# End the battle as victory
 		if battle_manager:

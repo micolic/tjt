@@ -226,6 +226,7 @@ func set_stats(value: UnitStats) -> void:
 
 	# Position HP/Mana bars above the (visually scaled) sprite, centered on the unit.
 	_update_bar_positions()
+	_update_collision_shape()
 
 	# Connect stats signals if not in editor
 	if not Engine.is_editor_hint():
@@ -254,6 +255,27 @@ func _update_bar_positions() -> void:
 	m_bar.offset_right = half_size.x - 1.0
 	m_bar.offset_top = top - 5.0
 	m_bar.offset_bottom = top - 1.0
+
+
+## Resizes the clickable shape to cover the raised sprite AND the footprint tile.
+## Without this only the tile under the unit's feet is clickable; the sprite body
+## drawn above the origin would miss clicks. Shape is per-instance (sizes vary).
+func _update_collision_shape() -> void:
+	var shape_node := get_node_or_null("CollisionShape2D") as CollisionShape2D
+	if not stats or shape_node == null:
+		return
+	var skin_offset: Vector2 = skin.offset if skin is Sprite2D else Vector2.ZERO
+	var sprite_center: Vector2 = skin_offset * stats.visual_scale
+	var sprite_half: Vector2 = Vector2(stats.tile_size) * stats.visual_scale * 0.5
+	var fp_half: Vector2 = Vector2(UnitGrid.footprint_of(self)) * PlayArea.GRID_CELL_PX * 0.5
+	var top: float = minf(sprite_center.y - sprite_half.y, -fp_half.y)
+	var bottom: float = maxf(sprite_center.y + sprite_half.y, fp_half.y)
+	var left: float = minf(sprite_center.x - sprite_half.x, -fp_half.x)
+	var right: float = maxf(sprite_center.x + sprite_half.x, fp_half.x)
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(right - left, bottom - top) + Vector2(4.0, 4.0)
+	shape_node.shape = rect
+	shape_node.position = Vector2(left + right, top + bottom) * 0.5
 
 
 ## Swaps the static Sprite2D skin for an AnimatedSprite2D using the stats' sprite_frames.

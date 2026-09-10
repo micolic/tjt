@@ -122,7 +122,6 @@ func _apply_synergy(faction: UnitStats.Faction) -> void:
 			continue
 		_store_and_apply(unit, def)
 	_applied[faction] = true
-	print("[Synergy] ✅ %s synergy ACTIVATED" % def.name)
 
 
 func _remove_synergy(faction: UnitStats.Faction) -> void:
@@ -134,7 +133,6 @@ func _remove_synergy(faction: UnitStats.Faction) -> void:
 			continue
 		_restore(unit, def)
 	_applied[faction] = false
-	print("[Synergy] ❌ %s synergy DEACTIVATED" % def.name)
 
 
 func _store_and_apply(unit: Node, def: Dictionary) -> void:

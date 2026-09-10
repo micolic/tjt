@@ -76,7 +76,6 @@ func apply(unit: Node) -> void:
 		_:
 			# Combat passives have nothing to bake in — they run through the hooks below.
 			pass
-	print("[Passive] %s gains %s (%s)" % [unit.stats.name, passive_name, PassiveType.keys()[passive_type]])
 
 
 ## Remove passive effect from unit (for temporary passives). Only stat passives are reversible.
@@ -121,7 +120,6 @@ func modify_outgoing_damage(unit: Node, damage: int) -> int:
 	if count % interval != 0:
 		return damage
 	var boosted: int = roundi(damage * value)
-	print("[Passive] %s: %s triggers on attack #%d (%d → %d dmg)" % [unit.stats.name, passive_name, count, damage, boosted])
 	return boosted
 
 
@@ -187,7 +185,6 @@ func on_health_changed(unit: Node) -> void:
 	var new_speed: float = base * (1.0 + value * stacks)
 	if not is_equal_approx(new_speed, unit.stats.attack_speed):
 		unit.stats.attack_speed = new_speed
-		print("[Passive] %s: %s at %d%% HP → %d stack(s), attack speed %.2f" % [unit.stats.name, passive_name, int(hp_fraction * 100), stacks, new_speed])
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────────

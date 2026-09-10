@@ -33,6 +33,11 @@ var _selected_unit: Unit = null
 var _is_match_over: bool = false
 var _last_ghost_anchor: Vector2i = Vector2i(-1, -1)
 
+## Live battle-time occupancy: 32px tile -> Array of unit nodes on that tile.
+## The placement unit_grid goes stale once units move in combat; UnitAI keeps
+## this updated from real positions so movement can check passability.
+var battle_occupancy: Dictionary = {}
+
 # Camera zoom
 const ZOOM_MIN := 0.5
 const ZOOM_MAX := 2.0
@@ -65,7 +70,6 @@ func _ready() -> void:
 	selected_unit_panel.deselection_requested.connect(_clear_unit_selection)
 	selected_unit_panel.set_player_stats(player_stats)
 	selected_unit_panel.set_unit(null)
-	print("[Selection] Unit selection initialized")
 	
 	# Connect battle manager signals
 	battle_manager.battle_started.connect(_on_battle_started)
@@ -182,13 +186,11 @@ func _set_selected_unit(unit: Unit) -> void:
 		_selected_unit.health_reached_zero.disconnect(_clear_unit_selection)
 		_selected_unit.tree_exiting.disconnect(_on_selected_unit_tree_exiting)
 		_selected_unit.set_selected(false)
-		print("[Selection] Deselected %s" % _selected_unit.stats.name)
 	_selected_unit = unit
 	if is_instance_valid(_selected_unit):
 		_selected_unit.set_selected(true)
 		_selected_unit.health_reached_zero.connect(_clear_unit_selection)
 		_selected_unit.tree_exiting.connect(_on_selected_unit_tree_exiting)
-		print("[Selection] Selected %s" % _selected_unit.stats.name)
 	selected_unit_panel.set_unit(_selected_unit)
 	_refresh_selected_unit_panel()
 
@@ -241,7 +243,6 @@ func _on_unit_removal_requested(unit: Unit) -> void:
 		return
 	var anchor: Vector2i = game_area.unit_grid.get_unit_anchor(unit)
 	if anchor != Vector2i(-1, -1):
-		print("[Arena] Removing %s at anchor %s" % [unit.stats.name, anchor])
 		_remove_placed_unit(anchor)
 
 
@@ -284,26 +285,16 @@ func _on_preparation_started() -> void:
 ## Called when battle ends with a winner.
 func _on_battle_ended(winner: UnitStats.Team) -> void:
 	if winner == UnitStats.Team.ENEMY:
-		var wave_num: int = wave_manager.current_wave_number if wave_manager else 0
 		# King HP = 0 is the only defeat condition
-		print("[Arena] ❌ DEFEAT! The King has fallen on Wave %d!" % wave_num)
 		_transition_to_game_over()
 		return
 
-	if wave_manager and wave_manager.current_wave_index + 1 < wave_manager.waves.size():
-		# Between waves — not a final result yet
-		print("[Arena] ✅ Wave %d complete! Preparing for next wave..." % wave_manager.current_wave_number)
-	elif winner == UnitStats.Team.PLAYER:
-		print("[Arena] ✅ VICTORY! All waves cleared!")
-		# Victory transition is handled by _on_all_waves_completed
-	
 	# Re-enable dragging for surviving player units once preparation begins
 	_set_drag_enabled(_can_modify_units())
 
 
 ## Called when wave_manager reports all waves cleared.
 func _on_all_waves_completed() -> void:
-	print("[Arena] 🏆 All waves completed — showing victory screen...")
 	_transition_to_victory()
 
 
@@ -427,7 +418,6 @@ func _update_toggle_button_text() -> void:
 func _on_panel_unit_selected(unit_stats: UnitStats) -> void:
 	if not _can_modify_units() or _placement_stats != null:
 		return
-	print("[Arena] Started placement for %s (%d gold)" % [unit_stats.name, unit_stats.gold_cost])
 	_placement_stats = unit_stats
 	_drag_placing = false
 	# Hide panel while placing
@@ -452,7 +442,6 @@ func _on_panel_unit_selected(unit_stats: UnitStats) -> void:
 func _on_panel_unit_drag_started(unit_stats: UnitStats) -> void:
 	if not _can_modify_units() or _placement_stats != null:
 		return
-	print("[Arena] Started drag-placement for %s (%d gold)" % [unit_stats.name, unit_stats.gold_cost])
 	_placement_stats = unit_stats
 	_drag_placing = true
 	# Hide panel while dragging
@@ -539,7 +528,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not _placement_stats:
 		return
 	if not _can_modify_units():
-		print("[Arena] Placement cancelled: no longer in preparation")
 		unit_selection_panel.cancel_selection()
 		return
 
@@ -553,7 +541,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		if not want_place:
 			return
 		if not game_area:
-			print("[Arena] Placement failed: no game area")
 			if _drag_placing:
 				_exit_placement_mode()
 				if unit_selection_panel:
@@ -562,7 +549,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		var footprint: Vector2i = _placement_stats.footprint
 		var hovered := game_area.get_hovered_tile()
 		if not game_area.is_tile_within_bounds(hovered):
-			print("[Arena] Placement failed: tile %s is out of bounds" % hovered)
 			if _drag_placing:
 				_exit_placement_mode()
 				if unit_selection_panel:
@@ -571,7 +557,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		var mouse_pos := game_area.get_global_mouse_position()
 		var tile := game_area.get_anchor_for_global(mouse_pos, footprint)
 		if not game_area.unit_grid.is_area_free(tile, footprint):
-			print("[Arena] Placement failed: area at %s (%s) is occupied" % [tile, footprint])
 			if _drag_placing:
 				_exit_placement_mode()
 				if unit_selection_panel:
@@ -579,21 +564,15 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 
 		# Spawn the unit at the chosen anchor
-		print("[Arena] Placing %s at anchor %s" % [_placement_stats.name, tile])
 		var spawned := unit_spawner.spawn_unit(_placement_stats, tile)
 		if not spawned:
-			print("[Arena] Placement failed: spawn_unit returned null")
 			return
-		print("[Arena] Placed %s at anchor %s global_pos=%s" % [
-		_placement_stats.name, tile, spawned.global_position
-	])
 		if unit_selection_panel:
 			unit_selection_panel.on_unit_placed(_placement_stats)
 		# Shift held → stay in placement mode for multi-place
 		if Input.is_key_pressed(KEY_SHIFT) and _placement_stats:
 			# Check if we can still afford
 			if player_stats and _placement_stats and player_stats.gold < _placement_stats.gold_cost:
-				print("[Arena] Exiting placement: cannot afford another %s" % _placement_stats.name)
 				_exit_placement_mode()
 				if unit_selection_panel:
 					unit_selection_panel.cancel_selection()
@@ -607,7 +586,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _exit_placement_mode() -> void:
-	print("[Arena] Exiting placement mode")
 	_placement_stats = null
 	_drag_placing = false
 	_last_ghost_anchor = Vector2i(-1, -1)
@@ -657,7 +635,6 @@ func _remove_placed_unit(tile: Vector2i) -> void:
 		unit_selection_panel.on_unit_removed()
 
 	# Free the unit
-	print("[Arena] Removed %s at tile %s (refunded %d gold)" % [unit.stats.name, tile, refund])
 	unit.queue_free()
 
 
@@ -677,7 +654,6 @@ func _upgrade_placed_unit(tile: Vector2i, target: UnitStats) -> void:
 	if current.is_king or current.team != UnitStats.Team.PLAYER:
 		return
 	if not current.has_upgrades():
-		print("[Upgrade] %s has no upgrade path" % current.name)
 		return
 
 	if not target or not current.upgrades.has(target) or target.team != UnitStats.Team.PLAYER:
@@ -685,7 +661,6 @@ func _upgrade_placed_unit(tile: Vector2i, target: UnitStats) -> void:
 		return
 	var cost: int = current.get_upgrade_cost(target)
 	if player_stats.gold < cost:
-		print("[Upgrade] Not enough gold to upgrade %s → %s (need %d, have %d)" % [current.name, target.name, cost, player_stats.gold])
 		_show_toast("Not enough gold: %s needs %d" % [target.name, cost], Color(1.0, 0.6, 0.3))
 		return
 
@@ -703,7 +678,6 @@ func _upgrade_placed_unit(tile: Vector2i, target: UnitStats) -> void:
 	upgraded.global_position = unit.global_position
 	_set_selected_unit(upgraded)
 	unit.queue_free()
-	print("[Upgrade] %s → %s at tile %s (-%d gold)" % [current.name, target.name, tile, cost])
 	_show_toast("%s upgraded to %s" % [current.name, target.name], Color(0.5, 0.9, 1.0))
 	var vfx_spawner = get_tree().get_first_node_in_group("vfx_spawner")
 	if vfx_spawner and vfx_spawner.has_method("spawn_vfx_on_unit"):
@@ -763,9 +737,6 @@ func _process(delta: float) -> void:
 			var anchor := game_area.get_anchor_for_global(mouse_pos, footprint)
 			if anchor != _last_ghost_anchor:
 				_last_ghost_anchor = anchor
-				print("[Arena] placement: mouse=%s footprint=%s anchor=%s ghost_pos=%s" % [
-					mouse_pos, footprint, anchor, game_area.get_unit_position(anchor, footprint)
-				])
 			_placement_ghost.visible = true
 			_placement_ghost.global_position = game_area.get_unit_position(anchor, footprint)
 			# Tint green if free, red if occupied

@@ -66,10 +66,5 @@ func spawn_unit(unit: UnitStats, tile: Vector2i = Vector2i(-1, -1)) -> Node:
 		elif v:
 			v.enabled = false
 
-	var skin_offset: Vector2 = new_unit.skin.offset if new_unit.skin is Sprite2D else Vector2.ZERO
-	print("[UnitSpawner] Spawned %s at anchor %s global_pos=%s skin.offset=%s" % [
-		new_unit.stats.name, spawn_tile, new_unit.global_position, skin_offset
-	])
-
 	unit_spawned.emit(new_unit)
 	return new_unit

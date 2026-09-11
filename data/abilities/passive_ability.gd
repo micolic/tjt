@@ -37,8 +37,11 @@ const BERSERK_THRESHOLDS: Array[float] = [0.6, 0.4, 0.2]
 const META_ATTACK_COUNT := "passive_attack_count"
 const META_BASE_ATTACK_SPEED := "passive_base_attack_speed"
 
+## Display name of the passive.
 @export var passive_name: String = "Unnamed Passive"
+## Tooltip description.
 @export_multiline var description: String = ""
+## Which passive effect this is (see PassiveType enum above).
 @export var passive_type: PassiveType = PassiveType.HEALTH_REGEN_BONUS
 ## Percentage (0.2 = 20%), multiplier (1.6 = 160%) or flat value depending on passive_type.
 @export var value: float = 0.0

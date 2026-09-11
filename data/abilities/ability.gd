@@ -15,14 +15,22 @@ enum TargetType {
 	AREA            # Area effect around caster
 }
 
+## Display name of the ability.
 @export var ability_name: String = "Unnamed Ability"
+## Tooltip description.
 @export_multiline var description: String = ""
+## Icon texture shown in UI.
 @export var icon: Texture2D
+## Targeting rule (see TargetType enum above).
 @export var target_type: TargetType = TargetType.SINGLE_ENEMY
+## Mana required per cast.
 @export var mana_cost: float = 100.0
-@export var cooldown: float = 0.0  # Seconds before ability can be used again
-@export var cast_time: float = 0.0  # Animation/cast delay
-@export var cast_range: float = 0.0  # Max range for targeting (0 = unlimited)
+## Seconds before ability can be used again.
+@export var cooldown: float = 0.0
+## Animation/cast delay before the effect applies.
+@export var cast_time: float = 0.0
+## Max range for targeting in tiles (0 = unlimited).
+@export var cast_range: float = 0.0
 
 
 ## Called when ability is cast - override this in specific abilities

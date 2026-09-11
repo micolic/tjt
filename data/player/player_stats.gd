@@ -1,8 +1,11 @@
 class_name PlayerStats
 extends Resource
 
+## Current gold.
 @export_range(0, 9999) var gold: int: set = _set_gold
+## Current experience points.
 @export_range(0, 99) var xp: int: set = _set_xp
+## Current level.
 @export_range(1, 10) var level: int: set = _set_level
 
 func _set_xp(value: int) -> void:

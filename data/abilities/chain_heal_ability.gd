@@ -7,7 +7,9 @@ class_name ChainHealAbility
 ## Uses effective missing HP so several healers don't stack on the same target.
 
 @export var heal_amount: float = 90.0
+## Max chain bounces after the first heal.
 @export_range(0, 10) var max_bounces: int = 4
+## Heal multiplier applied per bounce (0.75 = 75% of previous).
 @export_range(0.1, 1.0) var bounce_falloff: float = 0.75
 
 

@@ -8,11 +8,13 @@ class_name ChainDamageAbility
 ## Royal Griffin's "Storm Hammers" (bounces twice with reduced damage).
 
 @export var damage: float = 100.0
+## Max chain bounces after the first hit.
 @export_range(0, 10) var max_bounces: int = 5
 ## Damage multiplier applied on every bounce (0.75 = each jump deals 75% of the previous one).
 @export_range(0.1, 1.0) var bounce_falloff: float = 0.75
 ## Max distance (px) between consecutive chain targets. 0 = unlimited.
 @export var bounce_range: float = 96.0
+## Damage type for armor/MR reduction (PHYSICAL / MAGICAL / PURE).
 @export var damage_type: UnitStats.DamageType = UnitStats.DamageType.MAGICAL
 
 

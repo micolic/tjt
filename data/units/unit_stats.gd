@@ -32,10 +32,12 @@ const MOVE_ONE_TILE_SPEED := 1.0
 const MAX_TIER := 7
 
 @export_category("Data")
+## Shop price in gold. For upgrade units this is the TOTAL value (base + upgrade price).
 @export var gold_cost := 1
 ## Unit tier (Legion TD-style "level" of the unit: 1 = cheapest / weakest, 7 = champion).
 ## Upgrades keep the tier of their base unit.
 @export_range(1, MAX_TIER) var tier := 1 : set = _set_tier
+## Copies of this unit available in the deck pool.
 @export var pool_count := 5
 @export var is_king: bool = false  ## When true, this is the King unit — death = Game Over
 @export var faction: Faction = Faction.NONE  ## Faction for synergy system
@@ -52,6 +54,7 @@ const MAX_TIER := 7
 @export var unit_line: String = ""
 
 @export_category("Visuals")
+## Cell (column, row) of this sprite in the team spritesheet; multiplied by tile_size.
 @export var skin_coordinates: Vector2i
 ## Size of the unit's visual sprite in pixels (e.g. 32x32, 16x16, 64x64).
 ## Used to center the unit on its placement tile and to slice the spritesheet correctly.
@@ -68,24 +71,43 @@ const MAX_TIER := 7
 @export var sprite_frames: SpriteFrames
 
 @export_category("Battle")
+## Side this unit fights for (PLAYER or ENEMY).
 @export var team: Team
+## Hit points.
 @export var max_health: int
+## HP regenerated per second.
 @export var health_regen: float
+## Mana cap — the ability casts when mana is full.
 @export var max_mana: int
+## Mana at spawn.
 @export var starting_mana: int
+## Mana regenerated per second.
 @export var mana_regen: float
+## Basic attack damage.
 @export var attack_damage: int
+## Ability power — scales ability damage/healing.
 @export var ability_power: int
+## Attacks per second.
 @export var attack_speed: float
+## Physical damage reduction in %.
 @export var armor: int
+## Magical damage reduction in %.
 @export var magic_resist: int
+## Attack range in tiles.
 @export_range(1, MAX_ATTACK_RANGE) var attack_range: int
+## Aggro range in tiles — engages enemies within this distance.
 @export_range(1, 10) var aggro_range: int = 3
+## Effect scene for melee attacks.
 @export var melee_attack: PackedScene
+## Projectile scene for ranged attacks.
 @export var ranged_attack: PackedScene
-@export var ability: PackedScene  # Legacy - keeping for compatibility
-@export var ability_resource: Ability  # New ability system
-@export var passive_ability: PassiveAbility  # Passive ability (stat bonuses)
+## Legacy ability slot — kept for compatibility; prefer ability_resource.
+@export var ability: PackedScene
+## Active ability resource (current ability system).
+@export var ability_resource: Ability
+## Passive ability resource (stat bonuses / on-hit effects).
+@export var passive_ability: PassiveAbility
+## SFX played on basic attacks.
 @export var auto_attack_sound: AudioStream
 
 var health: int : set = _set_health

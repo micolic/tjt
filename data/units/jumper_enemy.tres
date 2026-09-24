@@ -7,6 +7,7 @@
 script = ExtResource("1_script")
 name = "Jumper"
 team = 1
+footprint = Vector2i(2, 2)
 visual_scale = 1.5
 max_health = 60
 health_regen = 0.0

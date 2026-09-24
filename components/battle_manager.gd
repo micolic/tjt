@@ -70,6 +70,11 @@ func end_battle(winner: UnitStats.Team) -> void:
 		return
 	_change_state(State.ENDED)
 	battle_ended.emit(winner)
+	var winner_name := "PLAYER" if winner == UnitStats.Team.PLAYER else "ENEMY"
+	var allies := get_tree().get_nodes_in_group("player_units").size()
+	var foes := get_tree().get_nodes_in_group("enemy_units").size()
+	print("[Battle] ENDED — winner=%s (allies=%d, enemies_left=%d)" % [
+		winner_name, allies, foes])
 	
 	# Disable AI on all units
 	_enable_ai_for_units(false)
@@ -84,6 +89,7 @@ func enable_ai_for_all(enabled: bool) -> void:
 
 ## Changes the current state and emits signal.
 func _change_state(new_state: State) -> void:
+	print("[Battle] State: %s → %s" % [State.keys()[current_state], State.keys()[new_state]])
 	current_state = new_state
 	state_changed.emit(new_state)
 

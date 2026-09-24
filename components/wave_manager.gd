@@ -187,6 +187,9 @@ func start_next_wave() -> void:
 	is_wave_active = true
 	spawned_enemies.clear()
 	wave_started.emit(current_wave_number, wave_config)
+	print("[WAVE] ═══ Wave %d/%d started — %d enemies (difficulty ×%.2f) ═══" % [
+		current_wave_number, waves.size(),
+		wave_config.get_total_enemies(), difficulty_multiplier])
 	
 	await _spawn_wave(wave_config)
 
@@ -291,6 +294,9 @@ func _spawn_enemy_at_top(stats: UnitStats) -> Node:
 			v.enabled = false
 
 	unit_spawner.unit_spawned.emit(new_unit)
+	print("[WAVE] Spawned %s#%d at (%.0f,%.0f)" % [
+		new_unit.stats.name, new_unit.get_instance_id() % 1000,
+		spawn_pos.x, spawn_pos.y])
 	return new_unit
 
 
@@ -314,6 +320,10 @@ func _on_enemy_died(unit: Node) -> void:
 		# Already counted — avoid double-decrement
 		return
 	remaining_enemies = max(remaining_enemies - 1, 0)
+	var dname := "?"
+	if is_instance_valid(unit) and "stats" in unit and unit.stats:
+		dname = "%s#%d" % [unit.stats.name, unit.get_instance_id() % 1000]
+	print("[WAVE] %s died — %d remaining" % [dname, remaining_enemies])
 
 
 ## Returns the WaveConfig for the next upcoming wave, or null if none.
@@ -327,6 +337,7 @@ func get_next_wave_config() -> WaveConfig:
 func _complete_wave() -> void:
 	is_wave_active = false
 	wave_completed.emit(current_wave_number)
+	print("[WAVE] Wave %d COMPLETE" % current_wave_number)
 	
 	# Give rewards
 	var wave_config: WaveConfig = waves[current_wave_index] \

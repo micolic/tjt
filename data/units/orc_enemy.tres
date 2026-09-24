@@ -6,6 +6,7 @@
 script = ExtResource("1_d6p4t")
 name = "Orc"
 team = 1
+footprint = Vector2i(2, 2)
 max_health = 100
 max_mana = 100
 mana_regen = 2.0

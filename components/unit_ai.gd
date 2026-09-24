@@ -7,13 +7,15 @@ signal movement_finished
 signal attack_performed(target)
 
 ## Toggle AI debug logging (set to true to see target changes + attacks only)
-const DEBUG_AI: bool = false
+const DEBUG_AI: bool = true
 ## Toggle verbose AI logging (every tick scan — very spammy, usually false)
 const DEBUG_AI_VERBOSE: bool = false
 ## Toggle targeting-specific debug (shows WHY targets are picked/switched)
-const DEBUG_TARGETING: bool = false
+const DEBUG_TARGETING: bool = true
 ## Toggle movement/occupancy debug (blocked directions, boxed-in units)
-const DEBUG_MOVE: bool = false
+const DEBUG_MOVE: bool = true
+## Toggle periodic state snapshot — one compact [SNAP] line per unit
+const DEBUG_SNAPSHOT: bool = true
 
 const CELL_SIZE := Vector2(32, 32)
 
@@ -49,6 +51,19 @@ var _occ_cells: Array[Vector2i] = []  ## 32px tiles this unit currently occupies
 var _idle_log_timer: float = 0.0  ## Throttle IDLE log spam
 var _move_log_timer: float = 0.0  ## Throttle [MOVE] log spam
 var _animator: UnitAnimator  ## Cached animator reference
+
+## Coarse A* waypoints (world positions) around hard obstacles, rebuilt each AI tick.
+var _nav_waypoints: Array[Vector2] = []
+var _nav_waypoint_idx: int = 0
+## Committed detour direction while sliding around a blocker (anti-zigzag hysteresis).
+var _detour_dir: Vector2 = Vector2.ZERO
+var _detour_timer: float = 0.0
+const DETOUR_HOLD := 0.4  ## Seconds to keep a chosen detour before re-probing forward.
+const SNAPSHOT_INTERVAL := 2.0  ## Seconds between [SNAP] state logs per unit
+var _snapshot_timer: float = SNAPSHOT_INTERVAL  ## Throttle [SNAP] periodic log
+var _switch_count: int = 0  ## Target switches since last snapshot (chaos metric)
+var _detour_count: int = 0  ## Detour picks since last snapshot
+var _boxed_count: int = 0  ## Boxed-in holds since last snapshot
 
 
 ## Called when the node enters the scene tree.
@@ -87,6 +102,11 @@ func _process(delta: float) -> void:
 	if update_timer <= 0:
 		update_timer = update_interval
 		_update_ai()
+		_compute_nav_path()
+
+	# Committed detour direction decay (see _resolve_passable_direction)
+	if _detour_timer > 0:
+		_detour_timer -= delta
 
 	# Register our tiles in the shared battle occupancy map
 	_update_occupancy()
@@ -106,6 +126,13 @@ func _process(delta: float) -> void:
 	# Update movement log throttle
 	if _move_log_timer > 0:
 		_move_log_timer -= delta
+
+	# Periodic chaos snapshot — one compact line per unit
+	if _snapshot_timer > 0:
+		_snapshot_timer -= delta
+		if _snapshot_timer <= 0 and DEBUG_SNAPSHOT:
+			_snapshot_timer = SNAPSHOT_INTERVAL
+			_print_snapshot()
 
 	# Separation logic — gentle push between same-team units only
 	_apply_separation(delta)
@@ -191,15 +218,10 @@ func _process(delta: float) -> void:
 					_switch_target(nearby)
 					return  # Don't move this frame — attack next frame
 			
-			# Move toward target — probe the shared occupancy map so the unit
+			# Move toward target — follow coarse A* waypoints around hard
+			# obstacles, then probe the shared occupancy map so the unit
 			# slides around teammates (or holds) instead of pushing into a wall.
-			var desired_dir: Vector2
-			if navigation_agent:
-				navigation_agent.target_position = current_target.global_position
-				var next_position = navigation_agent.get_next_path_position()
-				desired_dir = (next_position - unit.global_position).normalized()
-			else:
-				desired_dir = (current_target.global_position - unit.global_position).normalized()
+			var desired_dir: Vector2 = _next_move_direction()
 			var move_dir: Vector2 = _resolve_passable_direction(desired_dir)
 			if move_dir == Vector2.ZERO:
 				# Boxed in — hold; the stuck timer will try another target
@@ -427,14 +449,20 @@ func notify_attacked_by(attacker: Node) -> void:
 
 ## ── Helper: switch current target and clean up ──
 func _switch_target(new_target) -> void:
-	if current_target and is_instance_valid(current_target) \
-			and current_target.has_meta("is_dummy_target"):
+	var old_dummy: bool = current_target != null and is_instance_valid(current_target) \
+			and current_target.has_meta("is_dummy_target")
+	if old_dummy:
 		current_target.queue_free()
 	current_target = new_target
 	_stuck_timer = 0.0
 	_last_distance_to_target = INF
+	_nav_waypoints.clear()
+	_nav_waypoint_idx = 0
 	var is_dummy: bool = new_target != null and new_target.has_meta("is_dummy_target") \
 			if new_target else false
+	# Count real target changes for the [SNAP] chaos metric (dummy→dummy is noise)
+	if not (old_dummy and is_dummy):
+		_switch_count += 1
 	if new_target and not is_dummy:
 		_target_lock_timer = TARGET_SWITCH_DELAY
 
@@ -1159,9 +1187,12 @@ func _remove_occupancy() -> void:
 	_occ_cells.clear()
 
 
-## All MOVE_TILE_PX tiles touched by the unit's visual box centered at `pos`.
+## All MOVE_TILE_PX tiles touched by the unit's footprint box centered at `pos`.
+## Uses the logical footprint (not tile_size) so e.g. a 2x2-cell unit with a
+## 32 px sprite registers only its 16 px of space.
 func _covered_cells(pos: Vector2) -> Array[Vector2i]:
-	var half: Vector2 = Vector2(unit.stats.tile_size) * 0.5 - Vector2.ONE
+	var half: Vector2 = Vector2(UnitGrid.footprint_of(unit)) \
+			* PlayArea.GRID_CELL_PX * 0.5 - Vector2.ONE
 	var tl := Vector2i(((pos - half) / MOVE_TILE_PX).floor())
 	var br := Vector2i(((pos + half) / MOVE_TILE_PX).floor())
 	var cells: Array[Vector2i] = []
@@ -1214,6 +1245,13 @@ func _resolve_passable_direction(desired: Vector2) -> Vector2:
 	if desired == Vector2.ZERO:
 		return Vector2.ZERO
 	var probe: float = MOVE_TILE_PX * 0.75
+	# Commit to an active detour first — without hysteresis the unit would
+	# re-pick a side every frame and zigzag in front of a blocker.
+	if _detour_timer > 0.0 and _detour_dir != Vector2.ZERO:
+		if _is_position_free(unit.global_position + _detour_dir * probe):
+			return _detour_dir
+		_detour_dir = Vector2.ZERO
+		_detour_timer = 0.0
 	var steered: Vector2 = _apply_avoidance_steering(desired)
 	var dest: Vector2 = unit.global_position + steered * probe
 	if _is_position_free(dest):
@@ -1225,17 +1263,152 @@ func _resolve_passable_direction(desired: Vector2) -> Vector2:
 	for angle in [0.7854, -0.7854, 1.5708, -1.5708, 2.3562, -2.3562]:
 		var dir: Vector2 = desired.rotated(angle)
 		if _is_position_free(unit.global_position + dir * probe):
+			_detour_dir = dir
+			_detour_timer = DETOUR_HOLD
+			_detour_count += 1
 			if DEBUG_MOVE and _move_log_timer <= 0:
 				_move_log_timer = 1.0
 				print("[MOVE] %s detour %.0fdeg → %s" % [
 					unit.stats.name, rad_to_deg(angle), dir])
 			return dir
+	_boxed_count += 1
 	if DEBUG_MOVE and _move_log_timer <= 0:
 		_move_log_timer = 1.0
 		print("[MOVE] %s BOXED at %s — all detours blocked by: %s" % [
 			unit.stats.name, unit.global_position,
 			_describe_blockers(unit.global_position)])
 	return Vector2.ZERO
+
+
+## Desired movement direction: follow coarse A* waypoints when available,
+## else the nav agent's next position, else a straight line to the target.
+func _next_move_direction() -> Vector2:
+	while _nav_waypoint_idx < _nav_waypoints.size():
+		var wp: Vector2 = _nav_waypoints[_nav_waypoint_idx]
+		var to_wp: Vector2 = wp - unit.global_position
+		if to_wp.length() < MOVE_TILE_PX * 0.35:
+			_nav_waypoint_idx += 1
+			continue
+		return to_wp.normalized()
+	if navigation_agent:
+		navigation_agent.target_position = current_target.global_position
+		var next_position: Vector2 = navigation_agent.get_next_path_position()
+		var to_next: Vector2 = next_position - unit.global_position
+		if to_next.length() > 0.01:
+			return to_next.normalized()
+	return (current_target.global_position - unit.global_position).normalized()
+
+
+## Octile distance heuristic for 8-way A* (diagonal costs ~1.41).
+func _octile(a: Vector2i, b: Vector2i) -> float:
+	var dx := absi(a.x - b.x)
+	var dy := absi(a.y - b.y)
+	return maxi(dx, dy) + 0.4142 * mini(dx, dy)
+
+
+## Rebuilds the coarse A* waypoint path to the current target, routing around
+## hard obstacles (anchored same-team units / King) on the 32 px battle grid.
+## Runs once per AI tick; moving teammates stay soft so waves still stream
+## past each other. Empty waypoint list = straight line is fine.
+func _compute_nav_path() -> void:
+	_nav_waypoints.clear()
+	_nav_waypoint_idx = 0
+	if not current_target or not is_instance_valid(current_target):
+		return
+	if not is_instance_valid(_arena):
+		_arena = get_tree().get_first_node_in_group("arena")
+		if not is_instance_valid(_arena):
+			return
+
+	var start := Vector2i((unit.global_position / MOVE_TILE_PX).floor())
+	var goal := Vector2i((current_target.global_position / MOVE_TILE_PX).floor())
+	if start == goal:
+		return
+
+	# Collect cells held by hard obstacles for this unit.
+	var blocked: Dictionary = {}
+	var bmin := Vector2i(mini(start.x, goal.x), mini(start.y, goal.y))
+	var bmax := Vector2i(maxi(start.x, goal.x), maxi(start.y, goal.y))
+	for c in _arena.battle_occupancy:
+		var cell: Vector2i = c
+		if cell == start or cell == goal:
+			continue
+		var hard := false
+		for o in _arena.battle_occupancy[cell]:
+			if o == unit or not is_instance_valid(o) or not o.stats:
+				continue
+			if o.stats.team != unit.stats.team:
+				continue
+			if _is_hard_obstacle(o):
+				hard = true
+				break
+		if hard:
+			blocked[cell] = true
+			bmin = Vector2i(mini(bmin.x, cell.x), mini(bmin.y, cell.y))
+			bmax = Vector2i(maxi(bmax.x, cell.x), maxi(bmax.y, cell.y))
+	if blocked.is_empty():
+		return  # Nothing to route around — straight line is fine
+
+	# Search bounds: rect covering start/goal/blockers + margin to go around.
+	const MARGIN := 4
+	bmin -= Vector2i(MARGIN, MARGIN)
+	bmax += Vector2i(MARGIN, MARGIN)
+
+	# A*, 8-way with no diagonal corner cutting.
+	var open: Array = [[_octile(start, goal), start]]
+	var came_from: Dictionary = {}
+	var g_score: Dictionary = {start: 0.0}
+	var closed: Dictionary = {}
+	var dirs: Array[Vector2i] = [
+		Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
+		Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
+	var found := false
+	var iterations := 0
+	var max_iter := 4000
+	while not open.is_empty() and iterations < max_iter:
+		iterations += 1
+		var best_i := 0
+		for i in range(1, open.size()):
+			if open[i][0] < open[best_i][0]:
+				best_i = i
+		var cur: Vector2i = open[best_i][1]
+		open.remove_at(best_i)
+		if cur == goal:
+			found = true
+			break
+		if closed.has(cur):
+			continue
+		closed[cur] = true
+		for d in dirs:
+			var n: Vector2i = cur + d
+			if n.x < bmin.x or n.y < bmin.y or n.x > bmax.x or n.y > bmax.y:
+				continue
+			if closed.has(n) or blocked.has(n):
+				continue
+			var is_diag: bool = d.x != 0 and d.y != 0
+			if is_diag and (blocked.has(cur + Vector2i(d.x, 0)) \
+					or blocked.has(cur + Vector2i(0, d.y))):
+				continue
+			var tg: float = g_score[cur] + (1.4142 if is_diag else 1.0)
+			if not g_score.has(n) or tg < g_score[n]:
+				came_from[n] = cur
+				g_score[n] = tg
+				open.append([tg + _octile(n, goal), n])
+	if not found:
+		return
+
+	# Reconstruct cells -> world-space cell centers as waypoints.
+	var cells: Array[Vector2i] = []
+	var t := goal
+	while t != start:
+		cells.insert(0, t)
+		t = came_from[t]
+	for c in cells:
+		_nav_waypoints.append((Vector2(c) + Vector2(0.5, 0.5)) * MOVE_TILE_PX)
+	_nav_waypoint_idx = 0
+	if DEBUG_MOVE:
+		print("[MOVE] %s path: %d waypoints (blocked=%d)" % [
+			unit.stats.name, _nav_waypoints.size(), blocked.size()])
 
 
 ## Names of living same-team units occupying the tiles covered at `pos` (debug).
@@ -1257,6 +1430,37 @@ func _describe_blockers(pos: Vector2) -> String:
 	return ", ".join(names) if names.size() > 0 else "none"
 
 
+## Periodic state snapshot — the "chaos meter". One compact [SNAP] line per
+## unit every SNAPSHOT_INTERVAL seconds: position, activity state, target, HP,
+## and counters (switches / detours / boxed-in holds) accumulated since the
+## last snapshot. A high `sw` count = target ping-ponging; high `box` = unit
+## is repeatedly trapped; compare `pos` between snapshots to spot oscillation.
+func _print_snapshot() -> void:
+	var state := "IDLE"
+	var tgt_name := "none"
+	var dist := -1.0
+	if current_target and is_instance_valid(current_target):
+		tgt_name = _get_target_name(current_target)
+		dist = unit.global_position.distance_to(current_target.global_position)
+		if current_target.has_meta("is_dummy_target"):
+			state = "SEEK"
+		elif dist <= unit.stats.attack_range * CELL_SIZE.x:
+			state = "FIGHT"
+		else:
+			state = "CHASE"
+	var hp: float = unit.current_health if "current_health" in unit else unit.stats.health
+	var warn := " ⚠PING-PONG" if _switch_count >= 4 else ""
+	print("[SNAP] %s %-5s pos=(%.0f,%.0f) tgt=%s dist=%.0f hp=%.0f " % [
+		_get_target_name(unit), state,
+		unit.global_position.x, unit.global_position.y,
+		tgt_name, dist, hp]
+		+ "sw=%d det=%d box=%d stuck=%.1f%s" % [
+		_switch_count, _detour_count, _boxed_count, _stuck_timer, warn])
+	_switch_count = 0
+	_detour_count = 0
+	_boxed_count = 0
+
+
 ## Apply separation force to avoid unit overlap.
 ## Units actively attacking a target are "anchored" and resist being pushed.
 func _apply_separation(delta: float) -> void:
@@ -1272,9 +1476,10 @@ func _apply_separation(delta: float) -> void:
 		if dist_to_target <= attack_range_px:
 			return  # Anchored — don't let teammates push us off our target
 
-	# Only apply separation to prevent perfect overlap.
-	# Use a distance close to the visual tile size (32px) so units don't stack.
-	var min_distance: float = 28.0
+	# Only apply separation to prevent perfect overlap. Distance scales with
+	# the unit's footprint: 2x2 -> 14 px, 4x4 -> 28 px, 8x8 -> 56 px.
+	var fp := UnitGrid.footprint_of(unit)
+	var min_distance: float = maxf(8.0, minf(fp.x, fp.y) * PlayArea.GRID_CELL_PX * 0.875)
 	var separation_force: float = 120.0
 
 	var all_units = get_tree().get_nodes_in_group("units")

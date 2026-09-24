@@ -199,6 +199,10 @@ func _set_current_health(value: float) -> void:
 	# Spawn damage number if we took damage
 	if damage_taken > 0:
 		_spawn_damage_number(damage_taken)
+		# King HP is the lose condition — always trace hits on him
+		if stats and stats.is_king:
+			print("[King] took %.0f dmg — HP %d/%d" % [
+				damage_taken, int(current_health), int(stats.get_max_health())])
 	
 	health_changed.emit(int(current_health))
 	if current_health <= 0 and not _is_dead:
@@ -216,6 +220,10 @@ func _set_current_mana(value: float) -> void:
 
 ## Called when unit's health reaches zero.
 func _on_health_reached_zero() -> void:
+	print("[Unit] %s#%d DIED%s" % [
+		stats.name if stats else "?",
+		get_instance_id() % 1000,
+		" — KING DOWN" if stats and stats.is_king else " (permadeath)"])
 	input_pickable = false
 	drag_and_drop.enabled = false
 	is_hovered = false
